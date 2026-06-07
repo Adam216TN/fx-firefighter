@@ -59,8 +59,34 @@ Citizen.CreateThread(function()
                 else
                     
                     BeginTextCommandDisplayHelp("STRING")
-                    AddTextComponentSubstringPlayerName("Water : " .. currentWater .. "/100 L. Press ~INPUT_CONTEXT~ to close the water panel")
+                    AddTextComponentSubstringPlayerName("Tank: ~b~" .. currentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Use 10L")
+                    
                     EndTextCommandDisplayHelp(0, false, true, -1)
+                    
+                    if IsControlJustPressed(0,47) then
+                        if currentWater > 0 then
+                            
+                            if lastNotif ~= nil then
+                                RemoveNotification(lastNotif)
+                            end
+                            
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("You consume 10L of water")
+                            lastNotif = DrawNotification(false,false)
+
+                            currentWater = currentWater - 10
+                        else
+
+                            if lastNotif ~= nil then
+                                RemoveNotification(lastNotif)
+                            end
+                            
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("The tank is empty")
+                            lastNotif = DrawNotification(false,false)
+                            
+                        end
+                    end
                 end
                 
                 if IsControlJustPressed(0,38) then
