@@ -25,7 +25,8 @@ end,false)
 
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(1000)
+        
+        local sleep = 1000
         
         local playerPed = PlayerPedId()
         local playerCoords = GetEntityCoords(playerPed)
@@ -42,12 +43,22 @@ Citizen.CreateThread(function()
             --print("[DEBUG] Distance actuelle avec le camion : " .. tostring(distance))
             
             if distance <= 4.0 then
-                SetNotificationTextEntry("STRING")
-                AddTextComponentString("A firetruck is near")
-                DrawNotification(false, false)
+                
+                sleep = 0
+                
+                BeginTextCommandDisplayHelp("STRING")
+                AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to open the water panel")
+                EndTextCommandDisplayHelp(0, false, true, -1)
+                
+                if IsControlJustPressed(0,38) then
+                    --print("[DEBUG] Tu as appuye sur E")
+                    SetNotificationTextEntry("STRING")
+                    AddTextComponentString("You pressed E")
+                    DrawNotification(false, false)
+                end
+                
             end
-        else
-            -- print("[DEBUG] Aucun camion à proximité...")
         end
+        Citizen.Wait(sleep)
     end
 end)
