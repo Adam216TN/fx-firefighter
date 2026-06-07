@@ -1,3 +1,5 @@
+--print("[DEBUG SYSTEM] Le fichier client.lua est bien charge et actif !")
+
 RegisterCommand('checkwater',function (source)
     local vehicle = GetVehiclePedIsIn(PlayerPedId(),false)
     if vehicle ~= 0 then
@@ -19,3 +21,33 @@ RegisterCommand('checkwater',function (source)
     
     
 end,false)
+
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000)
+        
+        local playerPed = PlayerPedId()
+        local playerCoords = GetEntityCoords(playerPed)
+        local hash_firetruck = GetHashKey('firetruk')
+        
+        local closest_firetruck = GetClosestVehicle(playerCoords.x, playerCoords.y, playerCoords.z, 15.0, hash_firetruck, 70)
+        
+        if closest_firetruck ~= 0 then
+            --print("[DEBUG] Camion trouvé ! ID de l'entité : " .. tostring(closest_firetruck))
+            
+            local firetruckCoords = GetEntityCoords(closest_firetruck)
+            
+            local distance = #(playerCoords - firetruckCoords)
+            --print("[DEBUG] Distance actuelle avec le camion : " .. tostring(distance))
+            
+            if distance <= 4.0 then
+                SetNotificationTextEntry("STRING")
+                AddTextComponentString("A firetruck is near")
+                DrawNotification(false, false)
+            end
+        else
+            -- print("[DEBUG] Aucun camion à proximité...")
+        end
+    end
+end)
