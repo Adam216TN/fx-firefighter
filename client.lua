@@ -1,5 +1,9 @@
 --print("[DEBUG SYSTEM] Le fichier client.lua est bien charge et actif !")
 
+local currentWater = 100
+local panelOpen = false
+local lastNotif = nil
+
 RegisterCommand('checkwater',function (source)
     local vehicle = GetVehiclePedIsIn(PlayerPedId(),false)
     if vehicle ~= 0 then
@@ -46,15 +50,42 @@ Citizen.CreateThread(function()
                 
                 sleep = 0
                 
-                BeginTextCommandDisplayHelp("STRING")
-                AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to open the water panel")
-                EndTextCommandDisplayHelp(0, false, true, -1)
+                if not panelOpen then
+                    
+                    BeginTextCommandDisplayHelp("STRING")
+                    AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to open the water panel")
+                    EndTextCommandDisplayHelp(0, false, true, -1)
+                
+                else
+                    
+                    BeginTextCommandDisplayHelp("STRING")
+                    AddTextComponentSubstringPlayerName("Water : " .. currentWater .. "/100 L. Press ~INPUT_CONTEXT~ to close the water panel")
+                    EndTextCommandDisplayHelp(0, false, true, -1)
+                end
                 
                 if IsControlJustPressed(0,38) then
                     --print("[DEBUG] Tu as appuye sur E")
-                    SetNotificationTextEntry("STRING")
-                    AddTextComponentString("You pressed E")
-                    DrawNotification(false, false)
+                    if panelOpen then
+                        
+                        panelOpen = false
+                        
+                        if lastNotif ~= nil then
+                            RemoveNotification(lastNotif)
+                        end
+                        SetNotificationTextEntry("STRING")
+                        AddTextComponentString("Water panel closed")
+                        lastNotif = DrawNotification(false,false)
+                    
+                    else
+                        panelOpen = true
+                        if lastNotif ~= nil then
+                            RemoveNotification(lastNotif)
+                        end
+                        
+                        SetNotificationTextEntry("STRING")
+                        AddTextComponentString("Water panel opened")
+                        lastNotif = DrawNotification(false,false)
+                    end
                 end
                 
             end
