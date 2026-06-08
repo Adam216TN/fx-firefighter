@@ -3,6 +3,8 @@
 local currentWater = 100
 local panelOpen = false
 local lastNotif = nil
+local has_hose = false
+local hoseObject = 0
 
 RegisterNetEvent('fx-firefighter:setClientWater')
 AddEventHandler('fx-firefighter:setClientWater', function(waterServ, plateServ)
@@ -90,20 +92,35 @@ Citizen.CreateThread(function()
                 
                 
                 if panelOpen and IsControlJustPressed(0, 47) then
-                    if currentWater > 0 then
-                        
-                        TriggerServerEvent('fx-firefighter:consumeServerWater', myPlate)
-                        
-                        if lastNotif ~= nil then RemoveNotification(lastNotif) end
+                    if has_hose then
+                        if DoesEntityExist(hoseObject) then
+                            DeleteEntity(hoseObject)
+                        end
+                        hoseObject = 0
+                        has_hose = false
+
                         SetNotificationTextEntry("STRING")
-                        
-                        AddTextComponentString("You consume water") 
-                        lastNotif = DrawNotification(false, false)
+                        AddTextComponentString("Hose stored back in the truck")
+                        DrawNotification(false, false)
                     else
-                        if lastNotif ~= nil then RemoveNotification(lastNotif) end
-                        SetNotificationTextEntry("STRING")
-                        AddTextComponentString("The tank is empty")
-                        lastNotif = DrawNotification(false, false)
+                        has_hose = true
+                        local hash_hose = GetHashKey("prop_hose_nozzle")
+                        RequestModel(hash_hose)
+                        while not HasModelLoaded(hash_hose) do
+                            Citizen.wait(0)
+                        end
+
+                        print("[DEBUG] Le modèle est chargé en mémoire")
+                        
+                        hoseObject = CreateObject(hash_hose,playerCoords.x,playerCoords.y,playerCoords.z,true,false,false)
+                        print("[DEBUG] Le modèle est créé en mémoire")
+                        local bone = GetPedBoneIndex(playerPed,28422)
+                        print("[DEBUG] L'index de l'os est recupéré")
+                        AttachEntityToEntity(hoseObject,playerPed,bone,0,0,0,0,0,0,false,false,false,false,0,false)
+                        print("[DEBUG] L'entité est attaché")
+
+                        SetModelAsNoLongerNeeded(hash_hose)
+                    
                     end
                 end
                 
