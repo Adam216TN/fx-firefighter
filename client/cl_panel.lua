@@ -63,9 +63,17 @@ Citizen.CreateThread(function()
                     AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to open the water panel")
                     EndTextCommandDisplayHelp(0, false, true, -1)
                 else
-                    BeginTextCommandDisplayHelp("STRING")
-                    AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Deploy The Hose")
-                    EndTextCommandDisplayHelp(0, false, true, -1)
+                    
+                    if Has_hose then
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Store The Hose")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
+                    else
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Deploy The Hose")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
+                    end
+                    
                 end
                 
                 if IsControlJustPressed(0, 38) then
@@ -129,7 +137,7 @@ Citizen.CreateThread(function()
                         90.0000, 80.0000, -155.0000,
                         true,true,false,false,1,true)
                         
-                        print("[DEBUG] L'entité est attaché")
+                        --print("[DEBUG] L'entité est attaché")
 
                         SetModelAsNoLongerNeeded(hash_hose)
                         
