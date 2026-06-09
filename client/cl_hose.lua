@@ -65,3 +65,58 @@ Citizen.CreateThread(function ()
     end
     
 end)
+
+
+
+Citizen.CreateThread(function ()
+
+    while true do
+        if Has_hose then
+            local playerPed = PlayerPedId()
+            local playerCoords = GetEntityCoords(playerPed)
+
+            local bone = GetPedBoneIndex(playerPed,57005)
+            local ptA = GetPedBoneCoords(playerPed,bone,0.0,0.0,0.0)
+
+            local hash_firetruck = GetHashKey('firetruk')
+            local firetruck = GetClosestVehicle(playerCoords.x,playerCoords.y,playerCoords.z,15.0,hash_firetruck,70)
+            
+            if firetruck ~= 0 then
+                local ptB = GetEntityCoords(firetruck)
+
+                local down = 2.5
+                
+                local ptC = vector3( 
+                (ptA.x + ptB.x)*0.5,
+                (ptA.y + ptB.y)*0.5,
+                (ptA.z + ptB.z)*0.5 - down)
+
+                local steps = 10
+                for i = 0, steps - 1 do
+                    
+                    local t1 = i/steps
+                    local t2 = (i+1)/steps
+                    
+                    local u1 = 1-t1
+                    local u2 = 1-t2
+                    
+                    local pt1 = vector(
+                    u1*u1*ptA.x + 2*u1*t1*ptC.x + t1*t1*ptB.x,
+                    u1*u1*ptA.y + 2*u1*t1*ptC.y + t1*t1*ptB.y,
+                    u1*u1*ptA.z + 2*u1*t1*ptC.z + t1*t1*ptB.z)
+
+                    local pt2 = vector(
+                    u2*u2*ptA.x + 2*u2*t2*ptC.x + t2*t2*ptB.x,
+                    u2*u2*ptA.y + 2*u2*t2*ptC.y + t2*t2*ptB.y,
+                    u2*u2*ptA.z + 2*u2*t2*ptC.z + t2*t2*ptB.z)
+
+                    DrawLine(pt1.x,pt1.y,pt1.z,pt2.x,pt2.y,pt2.z,255,0,0,255)
+                end
+            end
+            Citizen.Wait(0)
+        else
+            Citizen.Wait(1000)
+        end
+    end
+    
+end)
