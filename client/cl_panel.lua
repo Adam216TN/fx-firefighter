@@ -40,6 +40,31 @@ RegisterCommand('checkwater', function(source)
 end, false)
 
 
+local testObj = 0
+
+RegisterCommand("testpipe", function()
+    local playerPed = PlayerPedId()
+    local pos = GetEntityCoords(playerPed)
+    
+    if DoesEntityExist(testObj) then 
+        DeleteEntity(testObj) 
+    end
+    
+    local hash = GetHashKey("prop_pipe_single_01")
+    RequestModel(hash)
+    while not HasModelLoaded(hash) do 
+        Citizen.Wait(0) 
+    end
+    
+    testObj = CreateObject(hash, pos.x + 3.0, pos.y, pos.z + 1.0, true, false, false)
+    --SetEntityAsMissionEntity(testObj, true, true)
+    
+    SetEntityRotation(testObj, 0.0, 0.0, -90.0, 2, true)
+    
+    FreezeEntityPosition(testObj, true)
+end, false)
+
+
 Citizen.CreateThread(function()
     while true do
         local sleep = 1000
