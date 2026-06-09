@@ -108,22 +108,27 @@ Citizen.CreateThread(function()
                         while not HasModelLoaded(hash_hose) do
                             Citizen.Wait(0)
                         end
-                        print("[DEBUG] Le modèle est chargé en mémoire")
+                        --print("[DEBUG] Le modèle est chargé en mémoire")
 
                         RequestClipSet("move_characters@michael@fire")
                         while not HasClipSetLoaded("move_characters@michael@fire") do
                             Citizen.Wait(0)
                         end
 
-                        print("[DEBUG] La démarche est chargée en mémoire")
+                        --print("[DEBUG] La démarche est chargée en mémoire")
 
                         --print("[DEBUG] Le modèle est chargé en mémoire")
                         
                         HoseObject = CreateObject(hash_hose,playerCoords.x,playerCoords.y,playerCoords.z,true,false,false)
-                        print("[DEBUG] Le modèle est créé en mémoire")
-                        local bone = GetPedBoneIndex(playerPed,28422)
-                        print("[DEBUG] L'index de l'os est recupéré")
-                        AttachEntityToEntity(HoseObject,playerPed,bone,0,0,0,0,0,0,true,true,false,true,1,true)
+                        --print("[DEBUG] Le modèle est créé en mémoire")
+                        local bone = GetPedBoneIndex(playerPed,57005)
+                        --print("[DEBUG] L'index de l'os est recupéré")
+                        
+                        AttachEntityToEntity(HoseObject,playerPed,bone,
+                        0.2400, 0.0200, 0.0066,
+                        90.0000, 80.0000, -155.0000,
+                        true,true,false,false,1,true)
+                        
                         print("[DEBUG] L'entité est attaché")
 
                         SetModelAsNoLongerNeeded(hash_hose)

@@ -1,5 +1,5 @@
 local isWalksetApplied = false
-local minigunHash = GetHashKey("WEAPON_RPG")
+local minigunHash = GetHashKey("WEAPON_CARBINERIFLE")
 local nextCheck = 0
 local isFiring = false
 
@@ -18,7 +18,7 @@ Citizen.CreateThread(function ()
                 nextCheck = currentTime + 1000
             end
 
-            SetPedCurrentWeaponVisible(playerPed,false,false,false,false)
+            SetPedCurrentWeaponVisible(playerPed,false,false,true,true)
 
             DisablePlayerFiring(PlayerId(),true)
             DisableControlAction(0,21,true)
@@ -38,12 +38,12 @@ Citizen.CreateThread(function ()
                 end
             end
             
-            if not isFiring and currentTime > nextCheck then    
+            --[[if currentTime > nextCheck then    
                 if GetPedMovementClipset(playerPed) ~= GetHashKey("move_characters@michael@fire") then
                     SetPedMovementClipset(playerPed,"move_characters@michael@fire",0.2)
                 end
                 nextCheck = currentTime +1000
-            end
+            end]]
             
             
             --DisableControlAction(0, 24, true)
