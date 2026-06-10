@@ -1,11 +1,9 @@
 fx_version 'cerulean'
 game 'gta5'
-
 name 'firefighter'
 author 'Adam'
 description 'firefighter script'
 version '1.0.0'
-
 
 client_scripts {
     'client/**.lua'
@@ -14,3 +12,9 @@ client_scripts {
 server_scripts {
     'server/**.lua'
 }
+
+files {
+    'stream/**'
+}
+
+data_file 'DLC_ITYP_REQUEST' 'stream/prop_pipe_firefighter.ytyp'
