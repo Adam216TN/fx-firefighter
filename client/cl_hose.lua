@@ -5,13 +5,13 @@ local isFiring         = false
 SpawnedPipes = {}
 
 local SEGMENT_LENGTH       = 0.05
-local MAX_SEGMENTS         = 400
+local MAX_SEGMENTS         = 600
 local MAX_HOSE_LENGTH      = MAX_SEGMENTS * SEGMENT_LENGTH
 
-local COIL_RADIUS          = 0.8
+local COIL_RADIUS          = 1.2
 local SEGS_PER_TURN        = math.floor((2.0 * math.pi * COIL_RADIUS) / SEGMENT_LENGTH)
-local JUNCTION_IN_SEGS     = 15
-local JUNCTION_OUT_SEGS    = 15
+local JUNCTION_IN_SEGS     = 45
+local JUNCTION_OUT_SEGS    = 45
 
 function RotationToFace(pos1, pos2)
     local dx = pos2.x - pos1.x
@@ -174,11 +174,13 @@ Citizen.CreateThread(function()
 
                 local tangentOut = coilTangent(coilCenter, math.max(1, rolledCount), SEGS_PER_TURN, SEGMENT_LENGTH, 0.5)
 
+                local tanIn = coilTangent(coilCenter, 1, SEGS_PER_TURN, SEGMENT_LENGTH, 1.5)
+
                 local ptC_in = vector3(
-                    (ptA.x + firstCirclePos.x) * 0.5,
-                    (ptA.y + firstCirclePos.y) * 0.5,
-                    ptA.z
-                )
+                        firstCirclePos.x - (tanIn.x - firstCirclePos.x),
+                        firstCirclePos.y - (tanIn.y - firstCirclePos.y),
+                        ptA.z
+                    )
                 for i = 1, JUNCTION_IN_SEGS do
                     local obj = SpawnedPipes[i]
                     if obj and DoesEntityExist(obj) then
@@ -234,11 +236,18 @@ Citizen.CreateThread(function()
                 local ptStart = bezier(junctionOutStart, ptC_out, midTarget, 1.0)
 
                 if unrolledCount > 0 then
-                    local down = distance * 0.15
+                    local down = math.min(0.3, distance * 0.05)
+                    
+                    local targetZ = ((ptStart.z + ptB.z) * 0.5) - down
+                    
+                    if targetZ < ptStart.z then
+                        targetZ = ptStart.z
+                    end
+
                     local ptC_unrolled = vector3(
                         (ptStart.x + ptB.x) * 0.5,
                         (ptStart.y + ptB.y) * 0.5,
-                        (ptStart.z + ptB.z) * 0.5 - down
+                        targetZ
                     )
 
                     local baseIdx = JUNCTION_IN_SEGS + rolledCount + JUNCTION_OUT_SEGS
