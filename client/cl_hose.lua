@@ -13,6 +13,9 @@ local SEGS_PER_TURN        = math.floor((2.0 * math.pi * COIL_RADIUS) / SEGMENT_
 local JUNCTION_IN_SEGS     = 45
 local JUNCTION_OUT_SEGS    = 45
 
+local TRUCK_PANEL_OFFSET = vector3(0.90, -0.1, 0.0)
+local HOSE_OFFSET = vector3(0.0,-0.15,0.0)
+
 function RotationToFace(pos1, pos2)
     local dx = pos2.x - pos1.x
     local dy = pos2.y - pos1.y
@@ -135,6 +138,10 @@ Citizen.CreateThread(function()
             local bone         = GetPedBoneIndex(playerPed, 57005)
             local ptB          = GetPedBoneCoords(playerPed, bone, 0.0, 0.0, 0.0)
 
+            if HoseObject and DoesEntityExist(HoseObject) then
+                ptB = GetOffsetFromEntityInWorldCoords(HoseObject, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
+            end
+
             local firetruck = GetClosestVehicle(
                 playerCoords.x, playerCoords.y, playerCoords.z,
                 MAX_HOSE_LENGTH + 5.0, GetHashKey("firetruk"), 70
@@ -142,8 +149,10 @@ Citizen.CreateThread(function()
 
             if firetruck ~= 0 then
                 local ptA      = GetEntityCoords(firetruck)
-                local distance = math.min(#(ptA - ptB), MAX_HOSE_LENGTH)
+                local realSpawnPt = GetOffsetFromEntityInWorldCoords(firetruck,TRUCK_PANEL_OFFSET.x,TRUCK_PANEL_OFFSET.y,TRUCK_PANEL_OFFSET.z)
 
+                local distance = math.min(#(ptA - ptB), MAX_HOSE_LENGTH)
+            
                 if #SpawnedPipes == 0 then
                     if loadModel() then
                         for i = 1, MAX_SEGMENTS do
@@ -187,8 +196,8 @@ Citizen.CreateThread(function()
                         SetEntityVisible(obj, true, false)
                         local t1  = (i - 1) / JUNCTION_IN_SEGS
                         local t2  = i       / JUNCTION_IN_SEGS
-                        local pt1 = bezier(ptA, ptC_in, firstCirclePos, t1)
-                        local pt2 = bezier(ptA, ptC_in, firstCirclePos, t2)
+                        local pt1 = bezier(realSpawnPt, ptC_in, firstCirclePos, t1)
+                        local pt2 = bezier(realSpawnPt, ptC_in, firstCirclePos, t2)
                         placePipeSegment(obj, pt1, pt2)
                     end
                 end
@@ -275,3 +284,45 @@ Citizen.CreateThread(function()
         end
     end
 end)
+
+--[[local TEST_TRUCK_OFFSET = vector3(1.0,-0.1,0.0)
+local TEST_HOSE_OFFSET = vector3(0.0,-0.15,0.0)
+
+Citizen.CreateThread(function()
+    while true do
+        
+        if Has_hose then
+            local playerPed = PlayerPedId()
+            local playerCoords = GetEntityCoords(playerPed)
+
+            
+            local firetruck = GetClosestVehicle(
+                playerCoords.x, playerCoords.y, playerCoords.z,
+                MAX_HOSE_LENGTH + 5.0, GetHashKey("firetruk"), 70
+            )
+
+            if firetruck and firetruck ~= 0 then
+                
+                local trappeCoords = GetOffsetFromEntityInWorldCoords(firetruck, TEST_TRUCK_OFFSET.x, TEST_TRUCK_OFFSET.y, TEST_TRUCK_OFFSET.z)
+                
+                
+                if trappeCoords and trappeCoords.x ~= 0.0 then
+                    DrawMarker(28, trappeCoords.x, trappeCoords.y, trappeCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 255, 0, 0, 150, false, false, 2, false, nil, nil, false)
+                end
+            end
+
+            
+            if HoseObject and DoesEntityExist(HoseObject) then
+                local emboutCoords = GetOffsetFromEntityInWorldCoords(HoseObject, TEST_HOSE_OFFSET.x, TEST_HOSE_OFFSET.y, TEST_HOSE_OFFSET.z)
+                
+                if emboutCoords and emboutCoords.x ~= 0.0 then
+                    DrawMarker(28, emboutCoords.x, emboutCoords.y, emboutCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0, 0, 255, 150, false, false, 2, false, nil, nil, false)
+                end
+            end
+
+            Citizen.Wait(0)
+        else
+            Citizen.Wait(1000)
+        end
+    end
+end)]]
