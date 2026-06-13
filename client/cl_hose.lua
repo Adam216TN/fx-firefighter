@@ -60,8 +60,7 @@ end
 
 local function placePipeSegment(obj, pt1, pt2)
     local yaw, pitch, _ = RotationToFace(pt1, pt2)
-    local ptMid = (pt1 + pt2) * 0.5
-    SetEntityCoords(obj, ptMid.x, ptMid.y, ptMid.z, false, false, false, false)
+    SetEntityCoords(obj, pt1.x, pt1.y, pt1.z, false, false, false, false)
     SetEntityRotation(obj, pitch, 0.0, yaw - 90.0, 2, true)
 end
 
