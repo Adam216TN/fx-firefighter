@@ -152,7 +152,7 @@ Citizen.CreateThread(function()
                         
                         AttachEntityToEntity(HoseObject,playerPed,bone,
                         0.2400, 0.0200, 0.0066,
-                        90.0000, 80.0000, -155.0000,
+                        80.0000, 80.0000, -155.0000,
                         true,true,false,false,1,true)
                         
                         --print("[DEBUG] L'entité est attaché")
