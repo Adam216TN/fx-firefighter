@@ -1,6 +1,7 @@
 local isWalksetApplied = false
 local weaponHash       = GetHashKey("WEAPON_CARBINERIFLE")
 local isFiring         = false
+local activeHoseTruckEntity = 0
 
 SpawnedPipes = {}
 
@@ -143,10 +144,22 @@ Citizen.CreateThread(function()
                 ptB = GetOffsetFromEntityInWorldCoords(HoseObject, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
             end
 
-            local firetruck = GetClosestVehicle(
-                playerCoords.x, playerCoords.y, playerCoords.z,
-                MAX_HOSE_LENGTH + 5.0, GetHashKey("firetruk"), 70
-            )
+            local firetruck = 0
+
+            if activeHoseTruckEntity ~= 0 and DoesEntityExist(activeHoseTruckEntity) then
+                firetruck = activeHoseTruckEntity
+            else
+
+                local closest = GetClosestVehicle(
+                    playerCoords.x, playerCoords.y, playerCoords.z,
+                    MAX_HOSE_LENGTH + 5.0, GetHashKey("firetruk"), 70
+                )
+
+                if closest ~= 0 then
+                    firetruck = closest
+                    activeHoseTruckEntity = closest
+                end
+            end
 
             if firetruck ~= 0 then
                 local ptA      = GetEntityCoords(firetruck)
@@ -281,6 +294,7 @@ Citizen.CreateThread(function()
                 if DoesEntityExist(obj) then DeleteEntity(obj) end
             end
             SpawnedPipes = {}
+            activeHoseTruckEntity = 0
             Citizen.Wait(1000)
         end
     end
