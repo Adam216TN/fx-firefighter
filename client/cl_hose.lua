@@ -80,7 +80,7 @@ Citizen.CreateThread(function()
             local playerPed = PlayerPedId()
             if not isWalksetApplied then
                 isWalksetApplied = true
-                GiveWeaponToPed(playerPed, weaponHash, 10, false, true)
+                GiveWeaponToPed(playerPed, weaponHash, 0, false, true)
                 SetCurrentPedWeapon(playerPed, weaponHash, true)
                 SetPedMovementClipset(playerPed, "move_characters@michael@fire", 0.2)
             end
@@ -88,7 +88,9 @@ Citizen.CreateThread(function()
             DisablePlayerFiring(PlayerId(), true)
             DisableControlAction(0, 21, true)
             DisableControlAction(0, 22, true)
-            if IsControlPressed(0, 24) then
+            if IsControlPressed(0, 25) then
+                --print("[DEBUG] Entree premiere condition (hose)")
+                
                 if not isFiring then
                     isFiring = true
                     ResetPedMovementClipset(playerPed, 0.2)
