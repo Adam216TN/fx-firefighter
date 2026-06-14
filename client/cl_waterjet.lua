@@ -1,6 +1,7 @@
 local dictName  = "core"
 local currentJet = nil
 local activeRaycast = nil
+local lastWaterRefresh = 0
 
 local function ManageWaterPhysics()
     local hose_coords = GetEntityCoords(HoseObject)
@@ -58,6 +59,16 @@ Citizen.CreateThread(function()
 
             if currentJet ~= nil then
                 ManageWaterPhysics()
+
+                local currentTimer = GetGameTimer()
+                if currentTimer - lastWaterRefresh >= 1000 then 
+                    lastWaterRefresh = currentTimer
+
+                    local activePlate = GetCurrentTruckPlate()
+                    if activePlate ~= nil then
+                        TriggerServerEvent("fx-firefighter:consumeServerWater",activePlate)
+                    end
+                end
             end
 
             Citizen.Wait(0)

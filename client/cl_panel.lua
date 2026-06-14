@@ -2,6 +2,12 @@
 
 local panelOpen = false
 local lastNotif = nil
+local currentPanelPlate = nil
+local lastPanelRefresh = 0
+
+function GetCurrentTruckPlate()
+    return currentPanelPlate
+end
 
 RegisterNetEvent('fx-firefighter:setClientWater')
 AddEventHandler('fx-firefighter:setClientWater', function(waterServ, plateServ)
@@ -91,6 +97,15 @@ Citizen.CreateThread(function()
                         AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Deploy The Hose")
                         EndTextCommandDisplayHelp(0, false, true, -1)
                     end
+
+                    local current_timer = GetGameTimer()
+                    if current_timer - lastPanelRefresh >= 1000 then
+                        lastPanelRefresh = current_timer
+
+                        if myPlate ~= nil then
+                            TriggerServerEvent("fx-firefighter:getServerWater", myPlate)
+                        end
+                    end
                     
                 end
                 
@@ -101,9 +116,10 @@ Citizen.CreateThread(function()
                         SetNotificationTextEntry("STRING")
                         AddTextComponentString("Water panel closed")
                         lastNotif = DrawNotification(false, false)
+                        currentPanelPlate = nil
                     else
                         panelOpen = true
-                        
+                        currentPanelPlate = myPlate
                         TriggerServerEvent('fx-firefighter:getServerWater', myPlate)
                         
                         if lastNotif ~= nil then RemoveNotification(lastNotif) end
