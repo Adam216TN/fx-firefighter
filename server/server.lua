@@ -24,3 +24,15 @@ RegisterNetEvent('fx-firefighter:consumeServerWater',function (plate)
         TriggerClientEvent('fx-firefighter:setClientWater',-1,Trucks[plate],plate)
     end
 end)
+
+RegisterNetEvent('fx-firefighter:refillServerWater',function (plate)
+    
+    if Trucks[plate] ~=nil and Trucks[plate] < 100 then
+        Trucks[plate] = Trucks[plate] + 1
+
+        if Trucks[plate] > 100 then Trucks[plate] = 100 end
+
+        TriggerClientEvent('fx-firefighter:setClientWater',-1,Trucks[plate],plate)
+    end
+
+end)
