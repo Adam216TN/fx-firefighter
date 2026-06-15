@@ -76,10 +76,29 @@ Citizen.CreateThread(function()
         
         if closest_firetruck ~= 0 then
             local myPlate = GetVehicleNumberPlateText(closest_firetruck)
-            local firetruckCoords = GetEntityCoords(closest_firetruck)
-            local distance = #(playerCoords - firetruckCoords)
-            
-            if distance <= 4.0 then
+            local boneIndexRight = GetEntityBoneIndexByName(closest_firetruck,"wheel_rr")
+            local panelRightCoords = GetWorldPositionOfEntityBone(closest_firetruck,boneIndexRight)
+            --DrawMarker(28, panelRightCoords.x-1, panelRightCoords.y+2, panelRightCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 0, 255, 0, 150, false, false, 2, false, nil, nil, false)
+            local heading = GetEntityHeading(closest_firetruck)
+            local rad = math.rad(heading)
+
+            local offsetX = 0.0
+            local offsetY = 2.0
+
+            local rotatedX = offsetX * math.cos(rad) - offsetY * math.sin(rad)
+            local rotatedY = offsetX * math.sin(rad) + offsetY * math.cos(rad)
+
+            local finalPanelCoords = vector3(
+                panelRightCoords.x + rotatedX,
+                panelRightCoords.y + rotatedY,
+                panelRightCoords.z
+            )
+
+            --DrawMarker(28, finalPanelCoords.x, finalPanelCoords.y, finalPanelCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 0, 255, 0, 150, false, false, 2, false, nil, nil, false)
+
+            local distanceToPanel = #(playerCoords - finalPanelCoords)
+
+            if distanceToPanel <= 1.5 then
                 sleep = 0
                 
                 if not panelOpen then
@@ -177,6 +196,10 @@ Citizen.CreateThread(function()
                         
                     
                     end
+                end
+
+                if panelOpen and IsControlJustPressed(0,74) then
+                    TriggerServerEvent("fx-firefighter:refillServerWater",currentPanelPlate)
                 end
                 
             end
