@@ -1,6 +1,7 @@
 --print("[DEBUG SYSTEM] Le fichier client.lua est bien charge et actif !")
 
-local panelOpen = false
+local panelRightOpen = false
+local panelLeftOpen = false
 local lastNotif = nil
 local currentPanelPlate = nil
 local lastPanelRefresh = 0
@@ -76,34 +77,50 @@ Citizen.CreateThread(function()
         
         if closest_firetruck ~= 0 then
             local myPlate = GetVehicleNumberPlateText(closest_firetruck)
-            local boneIndexRight = GetEntityBoneIndexByName(closest_firetruck,"wheel_rr")
-            local panelRightCoords = GetWorldPositionOfEntityBone(closest_firetruck,boneIndexRight)
-            --DrawMarker(28, panelRightCoords.x-1, panelRightCoords.y+2, panelRightCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 0, 255, 0, 150, false, false, 2, false, nil, nil, false)
+            
             local heading = GetEntityHeading(closest_firetruck)
             local rad = math.rad(heading)
+            
+            local boneIndexRight = GetEntityBoneIndexByName(closest_firetruck,"wheel_rr")
+            local panelRightCoords = GetWorldPositionOfEntityBone(closest_firetruck,boneIndexRight)
+            local offsetXR = 0.0
+            local offsetYR = 2.0
 
-            local offsetX = 0.0
-            local offsetY = 2.0
+            local rotatedXR = offsetXR * math.cos(rad) - offsetYR * math.sin(rad)
+            local rotatedYR = offsetXR * math.sin(rad) + offsetYR * math.cos(rad)
 
-            local rotatedX = offsetX * math.cos(rad) - offsetY * math.sin(rad)
-            local rotatedY = offsetX * math.sin(rad) + offsetY * math.cos(rad)
-
-            local finalPanelCoords = vector3(
-                panelRightCoords.x + rotatedX,
-                panelRightCoords.y + rotatedY,
+            local finalPanelRightCoords = vector3(
+                panelRightCoords.x + rotatedXR,
+                panelRightCoords.y + rotatedYR,
                 panelRightCoords.z
             )
 
-            --DrawMarker(28, finalPanelCoords.x, finalPanelCoords.y, finalPanelCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 0, 255, 0, 150, false, false, 2, false, nil, nil, false)
+            local boneIndexLeft = GetEntityBoneIndexByName(closest_firetruck,"wheel_lr")
+            local panelLeftCoords = GetWorldPositionOfEntityBone(closest_firetruck,boneIndexLeft)
+            local offsetXL = 0.0
+            local offsetYL = 2.0
 
-            local distanceToPanel = #(playerCoords - finalPanelCoords)
+            local rotatedXL = offsetXL * math.cos(rad) - offsetYL * math.sin(rad)
+            local rotatedYL = offsetXL * math.sin(rad) + offsetYL * math.cos(rad)
 
-            if distanceToPanel <= 1.5 then
+            local finalPanelLeftCoords = vector3(
+                panelLeftCoords.x + rotatedXL,
+                panelLeftCoords.y + rotatedYL,
+                panelLeftCoords.z
+            )
+
+            --DrawMarker(28, finalPanelRightCoords.x, finalPanelRightCoords.y, finalPanelRightCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 0, 255, 0, 150, false, false, 2, false, nil, nil, false)
+            --DrawMarker(28, finalPanelLeftCoords.x, finalPanelLeftCoords.y, finalPanelLeftCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 255, 255, 0, 150, false, false, 2, false, nil, nil, false)
+
+            local distanceToRightPanel = #(playerCoords - finalPanelRightCoords)
+            local distanceToLeftPanel = #(playerCoords - finalPanelLeftCoords)
+
+            if distanceToRightPanel <= 1.5 then
                 sleep = 0
                 
-                if not panelOpen then
+                if not panelRightOpen then
                     BeginTextCommandDisplayHelp("STRING")
-                    AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to open the water panel")
+                    AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ To Open The Hose Panel")
                     EndTextCommandDisplayHelp(0, false, true, -1)
                 else
                     
@@ -129,15 +146,15 @@ Citizen.CreateThread(function()
                 end
                 
                 if IsControlJustPressed(0, 38) then
-                    if panelOpen then
-                        panelOpen = false
+                    if panelRightOpen then
+                        panelRightOpen = false
                         if lastNotif ~= nil then RemoveNotification(lastNotif) end
                         SetNotificationTextEntry("STRING")
                         AddTextComponentString("Water panel closed")
                         lastNotif = DrawNotification(false, false)
                         currentPanelPlate = nil
                     else
-                        panelOpen = true
+                        panelRightOpen = true
                         currentPanelPlate = myPlate
                         TriggerServerEvent('fx-firefighter:getServerWater', myPlate)
                         
@@ -149,7 +166,7 @@ Citizen.CreateThread(function()
                 end
                 
                 
-                if panelOpen and IsControlJustPressed(0, 47) then
+                if panelRightOpen and IsControlJustPressed(0, 47) then
                     if Has_hose then
                         if DoesEntityExist(HoseObject) then
                             DeleteEntity(HoseObject)
@@ -197,11 +214,48 @@ Citizen.CreateThread(function()
                     
                     end
                 end
-
-                if panelOpen and IsControlJustPressed(0,74) then
-                    TriggerServerEvent("fx-firefighter:refillServerWater",currentPanelPlate)
-                end
                 
+            elseif distanceToLeftPanel <= 1.5 and not Has_hose then
+                sleep = 0
+
+                if not panelLeftOpen then
+                    BeginTextCommandDisplayHelp("STRING")
+                    AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ To Open The Refill Panel")
+                    EndTextCommandDisplayHelp(0, false, true, -1)
+                else
+                    BeginTextCommandDisplayHelp("STRING")
+                    AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close")
+                    EndTextCommandDisplayHelp(0, false, true, -1)
+
+                    local current_timer = GetGameTimer()
+                    if current_timer - lastPanelRefresh >= 1000 then
+                        lastPanelRefresh = current_timer
+
+                        if myPlate ~= nil then
+                            TriggerServerEvent("fx-firefighter:getServerWater", myPlate)
+                        end
+                    end
+                end
+
+                if IsControlJustPressed(0, 38) then
+                    if panelLeftOpen then
+                        panelLeftOpen = false
+                        if lastNotif ~= nil then RemoveNotification(lastNotif) end
+                        SetNotificationTextEntry("STRING")
+                        AddTextComponentString("Refill panel closed")
+                        lastNotif = DrawNotification(false, false)
+                        currentPanelPlate = nil
+                    else
+                        panelLeftOpen = true
+                        currentPanelPlate = myPlate
+                        TriggerServerEvent('fx-firefighter:getServerWater', myPlate)
+                        
+                        if lastNotif ~= nil then RemoveNotification(lastNotif) end
+                        SetNotificationTextEntry("STRING")
+                        AddTextComponentString("Refill panel opened")
+                        lastNotif = DrawNotification(false, false)
+                    end
+                end
             end
         end
         Citizen.Wait(sleep)
