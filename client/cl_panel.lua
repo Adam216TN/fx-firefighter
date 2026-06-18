@@ -115,7 +115,7 @@ Citizen.CreateThread(function()
             local distanceToRightPanel = #(playerCoords - finalPanelRightCoords)
             local distanceToLeftPanel = #(playerCoords - finalPanelLeftCoords)
 
-            if distanceToRightPanel <= 1.5 then
+            if distanceToRightPanel <= 1.5 and not Has_refillHose then
                 sleep = 0
                 
                 if not panelRightOpen then
@@ -223,10 +223,17 @@ Citizen.CreateThread(function()
                     AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ To Open The Refill Panel")
                     EndTextCommandDisplayHelp(0, false, true, -1)
                 else
-                    BeginTextCommandDisplayHelp("STRING")
-                    AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close")
-                    EndTextCommandDisplayHelp(0, false, true, -1)
-
+                    
+                    if Has_refillHose then
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Store The Hose")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
+                    else
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Deploy The Hose")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
+                    end
+                    
                     local current_timer = GetGameTimer()
                     if current_timer - lastPanelRefresh >= 1000 then
                         lastPanelRefresh = current_timer
@@ -254,6 +261,26 @@ Citizen.CreateThread(function()
                         SetNotificationTextEntry("STRING")
                         AddTextComponentString("Refill panel opened")
                         lastNotif = DrawNotification(false, false)
+                    end
+                end
+
+                if panelLeftOpen and IsControlJustPressed(0,47) then
+                    if Has_refillHose then
+                        
+                        Has_refillHose = false
+
+                        SetNotificationTextEntry("STRING")
+                        AddTextComponentString("Refill Hose stored back in the truck")
+                        DrawNotification(false, false)
+                    else
+                        
+                        Has_refillHose = true
+                        
+                        RequestClipSet("move_characters@michael@fire")
+                        while not HasClipSetLoaded("move_characters@michael@fire") do
+                            Citizen.Wait(0)
+                        end
+                    
                     end
                 end
             end
