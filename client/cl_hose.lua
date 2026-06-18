@@ -3,7 +3,7 @@ local weaponHash       = GetHashKey("WEAPON_CARBINERIFLE")
 local isFiring         = false
 local activeHoseTruckEntity = 0
 
-SpawnedPipes = {}
+local SpawnedPipes = {}
 
 local SEGMENT_LENGTH       = 0.05
 local MAX_SEGMENTS         = 600
@@ -16,25 +16,6 @@ local JUNCTION_OUT_SEGS    = 45
 
 local TRUCK_PANEL_OFFSET = vector3(0.90, -0.1, 0.0)
 local HOSE_OFFSET = vector3(0.0,-0.15,0.0)
-
-function RotationToFace(pos1, pos2)
-    local dx = pos2.x - pos1.x
-    local dy = pos2.y - pos1.y
-    local dz = pos2.z - pos1.z
-    local dist_ground = math.sqrt(dx * dx + dy * dy)
-    local yaw         = math.atan(dy, dx) * (180.0 / math.pi)
-    local pitch       = math.atan(dz, dist_ground) * (180.0 / math.pi)
-    return yaw, pitch, 0.0
-end
-
-local function bezier(ptA, ptC, ptB, t)
-    local u = 1.0 - t
-    return vector3(
-        u*u*ptA.x + 2*u*t*ptC.x + t*t*ptB.x,
-        u*u*ptA.y + 2*u*t*ptC.y + t*t*ptB.y,
-        u*u*ptA.z + 2*u*t*ptC.z + t*t*ptB.z
-    )
-end
 
 local function coilPos(coilCenter, i, segsPerTurn, segLen)
     local angle  = (i / segsPerTurn) * 2.0 * math.pi
@@ -57,12 +38,6 @@ local function coilTangent(coilCenter, i, segsPerTurn, segLen, tangentLen)
         pos.y + (dir.y / len) * tangentLen,
         pos.z
     )
-end
-
-local function placePipeSegment(obj, pt1, pt2)
-    local yaw, pitch, _ = RotationToFace(pt1, pt2)
-    SetEntityCoords(obj, pt1.x, pt1.y, pt1.z, false, false, false, false)
-    SetEntityRotation(obj, pitch, 0.0, yaw - 90.0, 2, true)
 end
 
 AddEventHandler('onResourceStop', function(resourceName)
@@ -210,9 +185,9 @@ Citizen.CreateThread(function()
                         SetEntityVisible(obj, true, false)
                         local t1  = (i - 1) / JUNCTION_IN_SEGS
                         local t2  = i       / JUNCTION_IN_SEGS
-                        local pt1 = bezier(realSpawnPt, ptC_in, firstCirclePos, t1)
-                        local pt2 = bezier(realSpawnPt, ptC_in, firstCirclePos, t2)
-                        placePipeSegment(obj, pt1, pt2)
+                        local pt1 = Bezier(realSpawnPt, ptC_in, firstCirclePos, t1)
+                        local pt2 = Bezier(realSpawnPt, ptC_in, firstCirclePos, t2)
+                        PlacePipeSegment(obj, pt1, pt2)
                     end
                 end
 
@@ -243,9 +218,9 @@ Citizen.CreateThread(function()
                             lastCirclePos.y + (ptB.y - lastCirclePos.y) * 0.25,
                             lastCirclePos.z + (ptB.z - lastCirclePos.z) * 0.25
                         )
-                        local pt1 = bezier(junctionOutStart, ptC_out, midTarget, t1)
-                        local pt2 = bezier(junctionOutStart, ptC_out, midTarget, t2)
-                        placePipeSegment(obj, pt1, pt2)
+                        local pt1 = Bezier(junctionOutStart, ptC_out, midTarget, t1)
+                        local pt2 = Bezier(junctionOutStart, ptC_out, midTarget, t2)
+                        PlacePipeSegment(obj, pt1, pt2)
                     end
                 end
 
@@ -256,7 +231,7 @@ Citizen.CreateThread(function()
                     lastCirclePos.y + (ptB.y - lastCirclePos.y) * 0.25,
                     lastCirclePos.z + (ptB.z - lastCirclePos.z) * 0.25
                 )
-                local ptStart = bezier(junctionOutStart, ptC_out, midTarget, 1.0)
+                local ptStart = Bezier(junctionOutStart, ptC_out, midTarget, 1.0)
 
                 if unrolledCount > 0 then
                     local down = math.min(0.3, distance * 0.05)
@@ -280,9 +255,9 @@ Citizen.CreateThread(function()
                             SetEntityVisible(obj, true, false)
                             local t1  = (i - 1) / unrolledCount
                             local t2  = i       / unrolledCount
-                            local pt1 = bezier(ptStart, ptC_unrolled, ptB, t1)
-                            local pt2 = bezier(ptStart, ptC_unrolled, ptB, t2)
-                            placePipeSegment(obj, pt1, pt2)
+                            local pt1 = Bezier(ptStart, ptC_unrolled, ptB, t1)
+                            local pt2 = Bezier(ptStart, ptC_unrolled, ptB, t2)
+                            PlacePipeSegment(obj, pt1, pt2)
                         end
                     end
                 end
