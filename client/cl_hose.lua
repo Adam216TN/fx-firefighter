@@ -145,7 +145,7 @@ Citizen.CreateThread(function()
                 if #SpawnedPipes == 0 then
                     if loadModel() then
                         for i = 1, MAX_SEGMENTS do
-                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, true, false, false)
+                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
                             SetEntityCollision(obj, false, false)
                             SetEntityVisible(obj, false, false)
                             table.insert(SpawnedPipes, obj)
