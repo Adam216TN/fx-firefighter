@@ -3,6 +3,8 @@ local hash_firehydrant = GetHashKey("prop_fire_hydrant_1")
 local firehydrantObj = nil
 local activeHoseTruckEntity = 0
 local hoseAttached = false
+local refillStart = false
+local lastWaterRefresh = 0
 
 local SpawnedRefillPipes = {}
 
@@ -81,7 +83,7 @@ Citizen.CreateThread(function ()
                 if #SpawnedRefillPipes == 0 then
                     if loadModel() then
                         for i = 1, MAX_SEGMENTS do
-                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, true, false, false)
+                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
                             SetEntityCollision(obj, false, false)
                             SetEntityVisible(obj, false, false)
                             table.insert(SpawnedRefillPipes, obj)
@@ -168,22 +170,48 @@ Citizen.CreateThread(function ()
                 local hydrantCoords = GetEntityCoords(firehydrantObj)
                 local distance = #(playerCoords - hydrantCoords)
 
-                if distance <= 1.5 then
-                    sleep = 0
-                    BeginTextCommandDisplayHelp("STRING")
-                    AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to disconnect the refill hose")
-                    EndTextCommandDisplayHelp(0, false, true, -1)
+                if not refillStart then    
+                    if distance <= 1.5 then
+                        sleep = 0
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Press ~INPUT_CONTEXT~ to disconnect the refill hose | ~INPUT_DETONATE~ to start the refill")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
 
-                    if IsControlJustPressed(0,38) then
-                        firehydrantObj = nil
-                        Has_refillHose = true
-                        hoseAttached = false
+                        if IsControlJustPressed(0,38) then
+                            firehydrantObj = nil
+                            Has_refillHose = true
+                            hoseAttached = false
 
-                        SetNotificationTextEntry("STRING")
-                        AddTextComponentString("Hose disconnected from the fire hydrant")
-                        DrawNotification(false, false)
-                    
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("Hose disconnected from the fire hydrant")
+                            DrawNotification(false, false)
+                        
+                        end
+
+                        if IsControlJustPressed(0,47) then
+                            refillStart = true
+                            
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("Refill Activates")
+                            DrawNotification(false, false)
+                        end
                     end
+                else
+                    if distance <= 1.5 then
+                        sleep = 0
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Press ~INPUT_DETONATE~ to stop the refill")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
+
+                        if IsControlJustPressed(0,47) then
+                            refillStart = false
+                            
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("Refill Deactivates")
+                            DrawNotification(false, false)
+                        end
+                    end
+                
                 end
             end
         end
@@ -192,4 +220,23 @@ Citizen.CreateThread(function ()
     
     end
     
+end)
+
+Citizen.CreateThread(function ()
+    while true do
+        if refillStart then
+            local currentTimer = GetGameTimer()
+            if currentTimer - lastWaterRefresh >= 1000 then 
+                lastWaterRefresh = currentTimer
+
+                local activePlate = GetCurrentTruckPlate()
+                if activePlate ~= nil then
+                    TriggerServerEvent("fx-firefighter:refillServerWater",activePlate)
+                end
+            end
+            Citizen.Wait(100)
+        else
+            Citizen.Wait(1000)
+        end
+    end
 end)
