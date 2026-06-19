@@ -3,6 +3,10 @@ local weaponHash       = GetHashKey("WEAPON_CARBINERIFLE")
 local isFiring         = false
 local activeHoseTruckEntity = 0
 
+function GetActiveHoseTruck()
+    return activeHoseTruckEntity
+end
+
 local SpawnedPipes = {}
 
 local SEGMENT_LENGTH       = 0.05
