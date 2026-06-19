@@ -1,16 +1,17 @@
 fx_version 'cerulean'
 game 'gta5'
-name 'firefighter'
-author 'Adam'
-description 'firefighter script'
-version '1.0.0'
 
 client_scripts {
-    'client/**.lua'
+    'client/utils.lua', 
+    'client/cl_main.lua',
+    'client/cl_panel.lua',
+    'client/cl_hose.lua',
+    'client/cl_refillhose.lua',
+    'client/cl_waterjet.lua'
 }
 
-server_scripts {
-    'server/**.lua'
+server_scripts {            
+    'server/server.lua'      
 }
 
 files {
