@@ -1,8 +1,9 @@
 local isWalksetApplied = false
-local hash_firehydrant = GetHashKey("prop_fire_hydrant_1")
+local hash_firehydrant1 = GetHashKey("prop_fire_hydrant_1")
+local hash_firehydrant2 = GetHashKey("prop_fire_hydrant_2")
 local firehydrantObj = nil
 local activeHoseTruckEntity = 0
-local hoseAttached = false
+HoseAttached = false
 local refillStart = false
 local lastWaterRefresh = 0
 
@@ -52,12 +53,12 @@ Citizen.CreateThread(function ()
     
     while true do
         
-        if Has_refillHose or hoseAttached then
+        if Has_refillHose or HoseAttached then
             local playerPed = PlayerPedId()
             local firetruck = 0
 
             local ptB = vector3(0.0, 0.0, 0.0)
-            if hoseAttached and firehydrantObj ~= nil and DoesEntityExist(firehydrantObj) then
+            if HoseAttached and firehydrantObj ~= nil and DoesEntityExist(firehydrantObj) then
                 ptB = GetEntityCoords(firehydrantObj)
             else
                 local bone = GetPedBoneIndex(playerPed, 57005)
@@ -130,18 +131,31 @@ Citizen.CreateThread(function ()
         
         local sleep = 1000
         
-        if Has_refillHose and not hoseAttached then
+        if Has_refillHose and not HoseAttached then
             local playerPed = PlayerPedId()
             local playerCoords = GetEntityCoords(playerPed)
 
-            local closestHydrant = GetClosestObjectOfType(
+            local closestHydrant1 = GetClosestObjectOfType(
             playerCoords.x,playerCoords.y,playerCoords.z,
-            5.0,hash_firehydrant,false,false,false)
+            5.0,hash_firehydrant1,false,false,false)
 
-            if closestHydrant ~= 0 then
+
+            local closestHydrant2 = GetClosestObjectOfType(
+            playerCoords.x,playerCoords.y,playerCoords.z,
+            5.0,hash_firehydrant2,false,false,false)
+
+            if closestHydrant1 ~= 0 or closestHydrant2 ~=0 then
                 sleep = 0
+                local closestHydrant = 0
+                if closestHydrant1 ~= 0 then
+                    closestHydrant = closestHydrant1
+                else
+                    closestHydrant = closestHydrant2
+                end
+
                 local hydrantCoords = GetEntityCoords(closestHydrant)
-                local distance = #(playerCoords-hydrantCoords)
+
+                local distance = #(playerCoords - hydrantCoords)
 
                 if distance <= 1.5 then
                     
@@ -151,7 +165,7 @@ Citizen.CreateThread(function ()
                 
                     if IsControlJustPressed(0,38) then
                         firehydrantObj = closestHydrant
-                        hoseAttached = true
+                        HoseAttached = true
                         Has_refillHose = false
                         SetNotificationTextEntry("STRING")
                         AddTextComponentString("Hose successfully connected to the fire hydrant")
@@ -159,9 +173,9 @@ Citizen.CreateThread(function ()
                     end
                 end
             end
-        end
+        
 
-        if hoseAttached then
+        elseif HoseAttached then
             local playerPed = PlayerPedId()
             local playerCoords = GetEntityCoords(playerPed)
 
@@ -180,7 +194,7 @@ Citizen.CreateThread(function ()
                         if IsControlJustPressed(0,38) then
                             firehydrantObj = nil
                             Has_refillHose = true
-                            hoseAttached = false
+                            HoseAttached = false
 
                             SetNotificationTextEntry("STRING")
                             AddTextComponentString("Hose disconnected from the fire hydrant")
@@ -223,19 +237,26 @@ Citizen.CreateThread(function ()
 end)
 
 Citizen.CreateThread(function ()
+    local currentRefillPlate = nil
+
     while true do
         if refillStart then
+            
+            if currentRefillPlate == nil and activeHoseTruckEntity ~= 0 and DoesEntityExist(activeHoseTruckEntity) then
+                currentRefillPlate = GetVehicleNumberPlateText(activeHoseTruckEntity)
+            end
+
             local currentTimer = GetGameTimer()
             if currentTimer - lastWaterRefresh >= 1000 then 
                 lastWaterRefresh = currentTimer
-
-                local activePlate = GetCurrentTruckPlate()
-                if activePlate ~= nil then
-                    TriggerServerEvent("fx-firefighter:refillServerWater",activePlate)
+                
+                if currentRefillPlate ~= nil then
+                    TriggerServerEvent("fx-firefighter:refillServerWater", currentRefillPlate)
                 end
             end
             Citizen.Wait(100)
         else
+            currentRefillPlate = nil 
             Citizen.Wait(1000)
         end
     end
