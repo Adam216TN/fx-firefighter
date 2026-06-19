@@ -228,6 +228,10 @@ Citizen.CreateThread(function()
                         BeginTextCommandDisplayHelp("STRING")
                         AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Store The Hose")
                         EndTextCommandDisplayHelp(0, false, true, -1)
+                    elseif HoseAttached then
+                        BeginTextCommandDisplayHelp("STRING")
+                        AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close")
+                        EndTextCommandDisplayHelp(0, false, true, -1)
                     else
                         BeginTextCommandDisplayHelp("STRING")
                         AddTextComponentSubstringPlayerName("Tank: ~b~" .. CurrentWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Deploy The Hose")
@@ -264,7 +268,7 @@ Citizen.CreateThread(function()
                     end
                 end
 
-                if panelLeftOpen and IsControlJustPressed(0,47) then
+                if panelLeftOpen and IsControlJustPressed(0,47) and not HoseAttached then
                     if Has_refillHose then
                         
                         Has_refillHose = false
