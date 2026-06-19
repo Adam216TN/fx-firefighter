@@ -64,9 +64,10 @@ Citizen.CreateThread(function()
                 if currentTimer - lastWaterRefresh >= 1000 then 
                     lastWaterRefresh = currentTimer
 
-                    local activePlate = GetCurrentTruckPlate()
-                    if activePlate ~= nil then
-                        TriggerServerEvent("fx-firefighter:consumeServerWater",activePlate)
+                    local truckEntity = GetActiveHoseTruck()
+                    if truckEntity ~= 0 and DoesEntityExist(truckEntity) then
+                        local activePlate = GetVehicleNumberPlateText(truckEntity)
+                        TriggerServerEvent("fx-firefighter:consumeServerWater", activePlate)
                     end
                 end
             end
