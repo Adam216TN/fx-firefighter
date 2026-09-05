@@ -48,3 +48,13 @@ RegisterNetEvent('fx-firefighter:refillServerWater',function (plate)
     end
 
 end)
+
+RegisterNetEvent('fx-firefighter:updateTruckState',function (plate,key,value)
+    
+    EnsureTruckExists(plate)
+
+    Trucks[plate][key] = value
+
+    TriggerClientEvent('fx-firefighter:syncTruckState',-1,plate,Trucks[plate])
+    
+end)
