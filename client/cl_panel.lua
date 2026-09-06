@@ -232,8 +232,14 @@ Citizen.CreateThread(function()
                         AddTextComponentSubstringPlayerName("Tank: ~b~" .. truckWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ Store The Hose")
                         EndTextCommandDisplayHelp(0, false, true, -1)
                     elseif isTruckConnectedHydrant then
+                        local isRefilling = TrucksClient[myPlate] and TrucksClient[myPlate].isRefilling
+
                         BeginTextCommandDisplayHelp("STRING")
-                        AddTextComponentSubstringPlayerName("Tank: ~b~" .. truckWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~y~Connected to hydrant~s~")
+                        if isRefilling then
+                            AddTextComponentSubstringPlayerName("Tank: ~b~" .. truckWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ ~r~Stop Refill~s~")
+                        else
+                            AddTextComponentSubstringPlayerName("Tank: ~b~" .. truckWater .. "~s~/100L~n~~INPUT_CONTEXT~ Close | ~INPUT_DETONATE~ ~g~Start Refill~s~")
+                        end
                         EndTextCommandDisplayHelp(0, false, true, -1)
                     elseif isTruckRefillHoseOut then
                         BeginTextCommandDisplayHelp("STRING")
@@ -275,26 +281,44 @@ Citizen.CreateThread(function()
                     end
                 end
 
-                if panelLeftOpen and IsControlJustPressed(0, 47) and not isTruckConnectedHydrant then
-                    if Has_refillHose then
-                        Has_refillHose = false
-                        TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isRefillHoseOut', false)
-
-                        SetNotificationTextEntry("STRING")
-                        AddTextComponentString("Refill Hose stored back in the truck")
-                        DrawNotification(false, false)
-                    elseif not isTruckRefillHoseOut then
-                        Has_refillHose = true
-                        TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isRefillHoseOut', true)
+                if panelLeftOpen and IsControlJustPressed(0, 47) then
                         
-                        RequestClipSet("move_characters@michael@fire")
-                        while not HasClipSetLoaded("move_characters@michael@fire") do
-                            Citizen.Wait(0)
+                    if isTruckConnectedHydrant then
+                        local isRefilling = TrucksClient[myPlate] and TrucksClient[myPlate].isRefilling
+                        TriggerServerEvent('fx-firefighter:updateTruckState',myPlate,'isRefilling',not isRefilling)
+
+                        if isRefilling then
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("Refill stopped")
+                            DrawNotification(false, false)
+                        else
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("Refill started")
+                            DrawNotification(false, false)
                         end
                     else
-                        SetNotificationTextEntry("STRING")
-                        AddTextComponentString("The refill hose is already taken from this truck")
-                        DrawNotification(false, false)
+                        if Has_refillHose then
+                            Has_refillHose = false
+                            HoldingRefillPlate = nil
+                            TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isRefillHoseOut', false)
+
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("Refill Hose stored back in the truck")
+                            DrawNotification(false, false)
+                        elseif not isTruckRefillHoseOut then
+                            Has_refillHose = true
+                            HoldingRefillPlate = myPlate
+                            TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isRefillHoseOut', true)
+                            
+                            RequestClipSet("move_characters@michael@fire")
+                            while not HasClipSetLoaded("move_characters@michael@fire") do
+                                Citizen.Wait(0)
+                            end
+                        else
+                            SetNotificationTextEntry("STRING")
+                            AddTextComponentString("The refill hose is already taken from this truck")
+                            DrawNotification(false, false)
+                        end
                     end
                 end
             end
