@@ -1,15 +1,11 @@
 local isWalksetApplied = false
 local hash_firehydrant1 = GetHashKey("prop_fire_hydrant_1")
 local hash_firehydrant2 = GetHashKey("prop_fire_hydrant_2")
-local firehydrantObj = nil
-local activeHoseTruckEntity = 0
-HoseAttached = false
 
 local SpawnedRefillPipes = {}
 
-local SEGMENT_LENGTH       = 0.05
-local MAX_SEGMENTS         = 600
-local MAX_HOSE_LENGTH      = MAX_SEGMENTS * SEGMENT_LENGTH
+local SEGMENT_LENGTH = 0.05
+local MAX_SEGMENTS   = 600
 
 local function GetVehicleByPlate(targetPlate)
     local vehicles = GetGamePool('CVehicle')
@@ -46,7 +42,7 @@ Citizen.CreateThread(function()
     end
 end)
 
-Citizen.CreateThread(function ()
+Citizen.CreateThread(function()
     local hash_pipe = GetHashKey("prop_pipe_firefighter")
 
     local function loadModel()
@@ -60,27 +56,26 @@ Citizen.CreateThread(function ()
     end
     
     while true do
-        local activePlate = nil
-        local targetHydrantNetId = nil
+        local activeTrucks = {}
 
         if Has_refillHose and HoldingRefillPlate ~= nil then
-           activePlate = HoldingRefillPlate
-        else
-            for plate, state in pairs(TrucksClient) do
-                if state.hydrantNetId ~= nil then
-                    activePlate = plate
-                    targetHydrantNetId = state.hydrantNetId
-                    break
-                end
+            activeTrucks[HoldingRefillPlate] = {isHeld = true}
+        end
+        
+        for plate, state in pairs(TrucksClient) do
+            if state.hydrantNetId ~= nil then
+                activeTrucks[plate] = {isHeld = false, hydrantNetId = state.hydrantNetId}
             end
         end
 
-        if activePlate ~= nil then
-            local playerPed = PlayerPedId()
-            local firetruck = GetVehicleByPlate(activePlate)
+        local hasAnyActive = false
+        
+        for plate, data in pairs(activeTrucks) do
+            local firetruck = GetVehicleByPlate(plate)
+
+            hasAnyActive = true
 
             if firetruck ~= 0 and DoesEntityExist(firetruck) then
-                
                 local boneIndexLeft = GetEntityBoneIndexByName(firetruck, "wheel_lr")
                 local panelLeftCoords = GetWorldPositionOfEntityBone(firetruck, boneIndexLeft)
                 local heading = GetEntityHeading(firetruck)
@@ -96,28 +91,29 @@ Citizen.CreateThread(function ()
 
                 local ptB = nil
 
-                if targetHydrantNetId ~= nil then
-                   
-                    if NetworkDoesNetworkIdExist(targetHydrantNetId) then
-                        local hydrantEntity = NetToObj(targetHydrantNetId)
-                        if DoesEntityExist(hydrantEntity) then
-                            ptB = GetEntityCoords(hydrantEntity)
-                        end
+                if data.isHeld == false then
+                    local hydrantEntity = NetToObj(data.hydrantNetId)
+                    if DoesEntityExist(hydrantEntity) then
+                        ptB = GetEntityCoords(hydrantEntity)
                     end
                 else
-           
+                    local playerPed = PlayerPedId()
                     local bone = GetPedBoneIndex(playerPed, 57005)
                     ptB = GetPedBoneCoords(playerPed, bone, 0.0, 0.0, 0.0)
                 end
 
                 if ptA and ptB then
-                    if #SpawnedRefillPipes == 0 then
+                    if SpawnedRefillPipes[plate] == nil then
+                        SpawnedRefillPipes[plate] = {}
+                    end
+                    
+                    if #SpawnedRefillPipes[plate] == 0 then
                         if loadModel() then
                             for i = 1, MAX_SEGMENTS do
                                 local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
                                 SetEntityCollision(obj, false, false)
                                 SetEntityVisible(obj, false, false)
-                                table.insert(SpawnedRefillPipes, obj)
+                                table.insert(SpawnedRefillPipes[plate], obj)
                             end
                         else
                             print("^1[ERREUR] prop_pipe_firefighter impossible à charger^7")
@@ -125,7 +121,7 @@ Citizen.CreateThread(function ()
                     end
 
                     for i = 1, MAX_SEGMENTS do
-                        local obj = SpawnedRefillPipes[i]
+                        local obj = SpawnedRefillPipes[plate][i]
                         if obj and DoesEntityExist(obj) then
                             SetEntityVisible(obj, true, false)
                             
@@ -140,21 +136,24 @@ Citizen.CreateThread(function ()
                     end
                 end
             end
-
-            Citizen.Wait(0)
-        else
-           
-            if #SpawnedRefillPipes > 0 then
-                for _, obj in ipairs(SpawnedRefillPipes) do
+        end
+            
+        for plate, pipeList in pairs(SpawnedRefillPipes) do
+            if not activeTrucks[plate] then
+                for _, obj in ipairs(pipeList) do
                     if DoesEntityExist(obj) then DeleteEntity(obj) end
                 end
-                SpawnedRefillPipes = {}
+                SpawnedRefillPipes[plate] = nil
             end
+        end
+
+        if hasAnyActive then
+            Citizen.Wait(0)
+        else
             Citizen.Wait(1000)
         end
     end
 end)
-
 
 Citizen.CreateThread(function()
     while true do
@@ -184,11 +183,13 @@ Citizen.CreateThread(function()
             local distance = #(playerCoords - hydrantCoords)
 
             if distance <= 1.5 then
-                local currentHydrantNetId = ObjToNet(closestHydrant)
+                if not NetworkGetEntityIsNetworked(closestHydrant) then
+                    NetworkRegisterEntityAsNetworked(closestHydrant)
+                end
 
+                local currentHydrantNetId = ObjToNet(closestHydrant)
                 
                 if Has_refillHose and HoldingRefillPlate ~= nil then
-                    
                     local isHydrantOccupied = false
                     for _, state in pairs(TrucksClient) do
                         if state.hydrantNetId == currentHydrantNetId then
@@ -227,7 +228,6 @@ Citizen.CreateThread(function()
                             EndTextCommandDisplayHelp(0, false, true, -1)
 
                             if IsControlJustPressed(0, 38) then
-                                
                                 if state.isRefilling then
                                     TriggerServerEvent('fx-firefighter:updateTruckState', plate, 'isRefilling', false)
                                 end
