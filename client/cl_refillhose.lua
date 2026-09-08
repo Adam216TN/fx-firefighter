@@ -45,26 +45,26 @@ end)
 Citizen.CreateThread(function()
     local hash_pipe = GetHashKey("prop_pipe_firefighter")
 
-    local function loadModel()
-        local timeout = 0
-        while not HasModelLoaded(hash_pipe) and timeout < 500 do
-            RequestModel(hash_pipe)
-            Citizen.Wait(100)
-            timeout = timeout + 1
-        end
-        return HasModelLoaded(hash_pipe)
+    RequestModel(hash_pipe)
+    local timeout = 0
+    while not HasModelLoaded(hash_pipe) and timeout < 500 do
+        Citizen.Wait(10)
+        timeout = timeout + 1
+    end
+
+    if not HasModelLoaded(hash_pipe) then
+        print("^1[ERREUR] prop_pipe_firefighter impossible à charger^7")
+        return
     end
     
     while true do
         local activeTrucks = {}
 
-        if Has_refillHose and HoldingRefillPlate ~= nil then
-            activeTrucks[HoldingRefillPlate] = {isHeld = true}
-        end
-        
         for plate, state in pairs(TrucksClient) do
             if state.hydrantNetId ~= nil then
                 activeTrucks[plate] = {isHeld = false, hydrantNetId = state.hydrantNetId}
+            elseif state.refillHolder ~= nil then
+                activeTrucks[plate] = {isHeld = true, refillHolderID = state.refillHolder}
             end
         end
 
@@ -97,9 +97,14 @@ Citizen.CreateThread(function()
                         ptB = GetEntityCoords(hydrantEntity)
                     end
                 else
-                    local playerPed = PlayerPedId()
-                    local bone = GetPedBoneIndex(playerPed, 57005)
-                    ptB = GetPedBoneCoords(playerPed, bone, 0.0, 0.0, 0.0)
+                    local playerIndex = GetPlayerFromServerId(data.refillHolderID)
+                    if playerIndex ~= -1 then
+                        local holderPed = GetPlayerPed(playerIndex)
+                        if DoesEntityExist(holderPed) then
+                            local bone = GetPedBoneIndex(holderPed, 57005)
+                            ptB = GetPedBoneCoords(holderPed, bone, 0.0, 0.0, 0.0)
+                        end
+                    end
                 end
 
                 if ptA and ptB then
@@ -108,15 +113,11 @@ Citizen.CreateThread(function()
                     end
                     
                     if #SpawnedRefillPipes[plate] == 0 then
-                        if loadModel() then
-                            for i = 1, MAX_SEGMENTS do
-                                local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
-                                SetEntityCollision(obj, false, false)
-                                SetEntityVisible(obj, false, false)
-                                table.insert(SpawnedRefillPipes[plate], obj)
-                            end
-                        else
-                            print("^1[ERREUR] prop_pipe_firefighter impossible à charger^7")
+                        for i = 1, MAX_SEGMENTS do
+                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
+                            SetEntityCollision(obj, false, false)
+                            SetEntityVisible(obj, false, false)
+                            table.insert(SpawnedRefillPipes[plate], obj)
                         end
                     end
 
@@ -132,6 +133,14 @@ Citizen.CreateThread(function()
                             local pt2 = Bezier(ptA, (ptA + ptB) / 2.0, ptB, t2)
 
                             PlacePipeSegment(obj, pt1, pt2)
+                        end
+                    end
+                elseif SpawnedRefillPipes[plate] then
+                    
+                    for i = 1, #SpawnedRefillPipes[plate] do
+                        local obj = SpawnedRefillPipes[plate][i]
+                        if obj and DoesEntityExist(obj) then
+                            SetEntityVisible(obj, false, false)
                         end
                     end
                 end
@@ -209,7 +218,14 @@ Citizen.CreateThread(function()
                         EndTextCommandDisplayHelp(0, false, true, -1)
 
                         if IsControlJustPressed(0, 38) then
+                            if TrucksClient[HoldingRefillPlate] then
+                                TrucksClient[HoldingRefillPlate].hydrantNetId = currentHydrantNetId
+                                TrucksClient[HoldingRefillPlate].refillHolder = nil
+                            end
+                            
                             TriggerServerEvent('fx-firefighter:updateTruckState', HoldingRefillPlate, 'hydrantNetId', currentHydrantNetId)
+                            TriggerServerEvent('fx-firefighter:updateTruckState', HoldingRefillPlate, 'refillHolder', nil)
+
                             Has_refillHose = false
                             HoldingRefillPlate = nil
 
@@ -228,11 +244,18 @@ Citizen.CreateThread(function()
                             EndTextCommandDisplayHelp(0, false, true, -1)
 
                             if IsControlJustPressed(0, 38) then
+                                
+                                if TrucksClient[plate] then
+                                    TrucksClient[plate].hydrantNetId = nil
+                                    TrucksClient[plate].refillHolder = GetPlayerServerId(PlayerId())
+                                end
+                                
                                 if state.isRefilling then
                                     TriggerServerEvent('fx-firefighter:updateTruckState', plate, 'isRefilling', false)
                                 end
 
                                 TriggerServerEvent('fx-firefighter:updateTruckState', plate, 'hydrantNetId', nil)
+                                TriggerServerEvent('fx-firefighter:updateTruckState', plate, 'refillHolder', GetPlayerServerId(PlayerId()))
                                 
                                 Has_refillHose = true
                                 HoldingRefillPlate = plate

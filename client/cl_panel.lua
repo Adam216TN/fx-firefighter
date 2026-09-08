@@ -300,7 +300,14 @@ Citizen.CreateThread(function()
                         if Has_refillHose then
                             Has_refillHose = false
                             HoldingRefillPlate = nil
+                            
+                            if TrucksClient[myPlate] then
+                                TrucksClient[myPlate].isRefillHoseOut = false
+                                TrucksClient[myPlate].refillHolder = nil
+                            end
+                            
                             TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isRefillHoseOut', false)
+                            TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'refillHolder', nil)
 
                             SetNotificationTextEntry("STRING")
                             AddTextComponentString("Refill Hose stored back in the truck")
@@ -308,7 +315,14 @@ Citizen.CreateThread(function()
                         elseif not isTruckRefillHoseOut then
                             Has_refillHose = true
                             HoldingRefillPlate = myPlate
+                            
+                            if TrucksClient[myPlate] then
+                                TrucksClient[myPlate].isRefillHoseOut = true
+                                TrucksClient[myPlate].refillHolder = GetPlayerServerId(PlayerId())
+                            end
+                            
                             TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isRefillHoseOut', true)
+                            TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'refillHolder', GetPlayerServerId(PlayerId()))
                             
                             RequestClipSet("move_characters@michael@fire")
                             while not HasClipSetLoaded("move_characters@michael@fire") do

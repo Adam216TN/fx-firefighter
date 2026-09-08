@@ -7,7 +7,9 @@ local function EnsureTruckExists (plate)
             isRefilling = false,
             isHoseOut = false,
             isRefillHoseOut = false,
-            hydrantNetId = nil
+            hydrantNetId = nil,
+            refillHolder = nil,
+            hoseHolder = nil
         }
     end
 
