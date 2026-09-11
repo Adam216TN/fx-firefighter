@@ -37,7 +37,7 @@ Citizen.CreateThread(function()
         timeout = timeout + 1
     end
 
-    print("[DEBUG] Modele chargee")
+    --print("[DEBUG] Modele chargee")
 
     while true do
         if Has_hose and HasNamedPtfxAssetLoaded(dictName) then
@@ -64,10 +64,8 @@ Citizen.CreateThread(function()
                 if currentTimer - lastWaterRefresh >= 1000 then 
                     lastWaterRefresh = currentTimer
 
-                    local truckEntity = GetActiveHoseTruck()
-                    if truckEntity ~= 0 and DoesEntityExist(truckEntity) then
-                        local activePlate = GetVehicleNumberPlateText(truckEntity)
-                        TriggerServerEvent("fx-firefighter:consumeServerWater", activePlate)
+                    if HoldingHosePlate ~= nil then
+                        TriggerServerEvent("fx-firefighter:consumeServerWater", HoldingHosePlate)
                     end
                 end
             end
