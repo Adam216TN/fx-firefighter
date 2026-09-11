@@ -181,6 +181,7 @@ Citizen.CreateThread(function()
                         
                         HoseObject = 0
                         Has_hose = false
+                        HoldingHosePlate = nil
 
                         if TrucksClient[myPlate] then
                             TrucksClient[myPlate].isHoseOut = false
@@ -189,12 +190,15 @@ Citizen.CreateThread(function()
                         
                         TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isHoseOut', false)
                         TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'hoseHolder', nil)
+                        TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'hoseNetId', nil)
+
 
                         SetNotificationTextEntry("STRING")
                         AddTextComponentString("Hose stored back in the truck")
                         DrawNotification(false, false)
                     elseif not isTruckHoseOut then
                         Has_hose = true
+                        HoldingHosePlate = myPlate
                         
                         if TrucksClient[myPlate] then
                             TrucksClient[myPlate].isHoseOut = true
@@ -217,6 +221,9 @@ Citizen.CreateThread(function()
                         
                         HoseObject = CreateObject(hash_hose, playerCoords.x, playerCoords.y, playerCoords.z, true, false, false)
                         local bone = GetPedBoneIndex(playerPed, 57005)
+
+                        local hoseNetId = ObjToNet(HoseObject)
+                        TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'hoseNetId', hoseNetId)
                         
                         AttachEntityToEntity(HoseObject, playerPed, bone,
                             0.2400, 0.0200, 0.0066,

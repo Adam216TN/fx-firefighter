@@ -1,11 +1,6 @@
 local isWalksetApplied = false
 local weaponHash       = GetHashKey("WEAPON_CARBINERIFLE")
 local isFiring         = false
-local activeHoseTruckEntity = 0
-
-function GetActiveHoseTruck()
-    return activeHoseTruckEntity
-end
 
 local SpawnedPipes = {}
 
@@ -119,28 +114,38 @@ Citizen.CreateThread(function()
 
         for plate, state in pairs(TrucksClient) do
             if state.hoseHolder ~= nil then
-                activeTrucks[plate] = state.hoseHolder
+                activeTrucks[plate] = {holderServerId = state.hoseHolder, hoseNetId = state.hoseNetId}
             end
         end
 
         local hasAnyActive = false
         
-        for plate, holderServerId in pairs(activeTrucks) do
+        for plate, data in pairs(activeTrucks) do
             hasAnyActive = true
             local firetruck = GetVehicleByPlate(plate)
             local ptB = nil
 
-            local playerIndex = GetPlayerFromServerId(holderServerId)
-            if playerIndex ~= -1 then
-                local holderPed = GetPlayerPed(playerIndex)
-                if DoesEntityExist(holderPed) then
-                    local bone = GetPedBoneIndex(holderPed, 57005)
-                    ptB = GetPedBoneCoords(holderPed, bone, 0.0, 0.0, 0.0)
+            if data.holderServerId == GetPlayerServerId(PlayerId()) and HoseObject and DoesEntityExist(HoseObject) then
+                ptB = GetOffsetFromEntityInWorldCoords(HoseObject, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
+
+            
+            elseif data.hoseNetId then
+                local nozzleEntity = NetToObj(data.hoseNetId)
+                if DoesEntityExist(nozzleEntity) then
+                    ptB = GetOffsetFromEntityInWorldCoords(nozzleEntity, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
                 end
             end
 
-            if holderServerId == GetPlayerServerId(PlayerId()) and HoseObject and DoesEntityExist(HoseObject) then
-                ptB = GetOffsetFromEntityInWorldCoords(HoseObject, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
+            
+            if ptB == nil and data.holderServerId then
+                local playerIndex = GetPlayerFromServerId(data.holderServerId)
+                if playerIndex ~= -1 then
+                    local holderPed = GetPlayerPed(playerIndex)
+                    if DoesEntityExist(holderPed) then
+                        local bone = GetPedBoneIndex(holderPed, 57005)
+                        ptB = GetPedBoneCoords(holderPed, bone, 0.0, 0.0, 0.0)
+                    end
+                end
             end
 
             if firetruck ~= 0 and ptB ~= nil then
@@ -278,6 +283,14 @@ Citizen.CreateThread(function()
                     if DoesEntityExist(obj) then DeleteEntity(obj) end
                 end
                 SpawnedPipes[plate] = nil
+                
+                local truckState = TrucksClient[plate]
+                if truckState and truckState.hoseNetId then
+                    local nozzleObj = NetToObj(truckState.hoseNetId)
+                    if DoesEntityExist(nozzleObj) then
+                        DeleteEntity(nozzleObj)
+                    end
+                end
             end
         end
         

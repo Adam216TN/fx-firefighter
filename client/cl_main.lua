@@ -18,6 +18,7 @@ end)
 CurrentWater = 100
 
 Has_hose = false
+HoldingHosePlate = nil
 HoseObject = 0
 
 Has_refillHose = false

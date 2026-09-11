@@ -8,8 +8,10 @@ local function EnsureTruckExists (plate)
             isHoseOut = false,
             isRefillHoseOut = false,
             hydrantNetId = nil,
+            hoseNetId = nil,
             refillHolder = nil,
-            hoseHolder = nil
+            hoseHolder = nil,
+            isShootingWater = false
         }
     end
 
@@ -68,6 +70,32 @@ Citizen.CreateThread(function()
                     TriggerClientEvent('fx-firefighter:syncTruckState', -1, plate, truck)
                 end
             end
+        end
+    end
+end)
+
+AddEventHandler('playerDropped', function()
+    local src = source
+
+    for plate, truck in pairs(Trucks) do
+        local needsSync = false
+
+        if truck.hoseHolder == src then
+            truck.isHoseOut = false
+            truck.hoseHolder = nil
+            truck.hoseNetId = nil
+            truck.isShootingWater = false
+            needsSync = true
+        end
+
+        if truck.refillHolder == src then
+            truck.isRefillHoseOut = false
+            truck.refillHolder = nil
+            needsSync = true
+        end
+
+        if needsSync then
+            TriggerClientEvent('fx-firefighter:syncTruckState', -1, plate, truck)
         end
     end
 end)
