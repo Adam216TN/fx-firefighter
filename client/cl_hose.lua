@@ -19,7 +19,7 @@ local JUNCTION_IN_SEGS     = 45
 local JUNCTION_OUT_SEGS    = 45
 
 local TRUCK_PANEL_OFFSET = vector3(0.90, -0.1, 0.0)
-local HOSE_OFFSET = vector3(0.0,-0.15,0.0)
+local HOSE_OFFSET = vector3(0.0, -0.15, 0.0)
 
 local function coilPos(coilCenter, i, segsPerTurn, segLen)
     local angle  = (i / segsPerTurn) * 2.0 * math.pi
@@ -46,8 +46,10 @@ end
 
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName == GetCurrentResourceName() then
-        for _, obj in ipairs(SpawnedPipes) do
-            if DoesEntityExist(obj) then DeleteEntity(obj) end
+        for _, pipeList in pairs(SpawnedPipes) do
+            for _, obj in ipairs(pipeList) do
+                if DoesEntityExist(obj) then DeleteEntity(obj) end
+            end
         end
         SpawnedPipes = {}
         if DoesEntityExist(HoseObject) then DeleteEntity(HoseObject) end
@@ -69,8 +71,6 @@ Citizen.CreateThread(function()
             DisableControlAction(0, 21, true)
             DisableControlAction(0, 22, true)
             if IsControlPressed(0, 25) then
-                --print("[DEBUG] Entree premiere condition (hose)")
-                
                 if not isFiring then
                     isFiring = true
                     ResetPedMovementClipset(playerPed, 0.2)
@@ -102,60 +102,62 @@ end)
 Citizen.CreateThread(function()
     local hash_pipe = GetHashKey("prop_pipe_firefighter")
 
-    local function loadModel()
-        local timeout = 0
-        while not HasModelLoaded(hash_pipe) and timeout < 500 do
-            RequestModel(hash_pipe)
-            Citizen.Wait(100)
-            timeout = timeout + 1
-        end
-        return HasModelLoaded(hash_pipe)
+    RequestModel(hash_pipe)
+    local timeout = 0
+    while not HasModelLoaded(hash_pipe) and timeout < 500 do
+        Citizen.Wait(10)
+        timeout = timeout + 1
+    end
+
+    if not HasModelLoaded(hash_pipe) then
+        print("^1[ERREUR] prop_pipe_firefighter impossible à charger^7")
+        return
     end
 
     while true do
-        if Has_hose then
-            local playerPed    = PlayerPedId()
-            local playerCoords = GetEntityCoords(playerPed)
-            local bone         = GetPedBoneIndex(playerPed, 57005)
-            local ptB          = GetPedBoneCoords(playerPed, bone, 0.0, 0.0, 0.0)
+        local activeTrucks = {}
 
-            if HoseObject and DoesEntityExist(HoseObject) then
-                ptB = GetOffsetFromEntityInWorldCoords(HoseObject, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
+        for plate, state in pairs(TrucksClient) do
+            if state.hoseHolder ~= nil then
+                activeTrucks[plate] = state.hoseHolder
             end
+        end
 
-            local firetruck = 0
+        local hasAnyActive = false
+        
+        for plate, holderServerId in pairs(activeTrucks) do
+            hasAnyActive = true
+            local firetruck = GetVehicleByPlate(plate)
+            local ptB = nil
 
-            if activeHoseTruckEntity ~= 0 and DoesEntityExist(activeHoseTruckEntity) then
-                firetruck = activeHoseTruckEntity
-            else
-
-                local closest = GetClosestVehicle(
-                    playerCoords.x, playerCoords.y, playerCoords.z,
-                    MAX_HOSE_LENGTH + 5.0, GetHashKey("firetruk"), 70
-                )
-
-                if closest ~= 0 then
-                    firetruck = closest
-                    activeHoseTruckEntity = closest
+            local playerIndex = GetPlayerFromServerId(holderServerId)
+            if playerIndex ~= -1 then
+                local holderPed = GetPlayerPed(playerIndex)
+                if DoesEntityExist(holderPed) then
+                    local bone = GetPedBoneIndex(holderPed, 57005)
+                    ptB = GetPedBoneCoords(holderPed, bone, 0.0, 0.0, 0.0)
                 end
             end
 
-            if firetruck ~= 0 then
-                local ptA      = GetEntityCoords(firetruck)
-                local realSpawnPt = GetOffsetFromEntityInWorldCoords(firetruck,TRUCK_PANEL_OFFSET.x,TRUCK_PANEL_OFFSET.y,TRUCK_PANEL_OFFSET.z)
+            if holderServerId == GetPlayerServerId(PlayerId()) and HoseObject and DoesEntityExist(HoseObject) then
+                ptB = GetOffsetFromEntityInWorldCoords(HoseObject, HOSE_OFFSET.x, HOSE_OFFSET.y, HOSE_OFFSET.z)
+            end
 
+            if firetruck ~= 0 and ptB ~= nil then
+                local ptA = GetEntityCoords(firetruck)
+                local realSpawnPt = GetOffsetFromEntityInWorldCoords(firetruck, TRUCK_PANEL_OFFSET.x, TRUCK_PANEL_OFFSET.y, TRUCK_PANEL_OFFSET.z)
                 local distance = math.min(#(ptA - ptB), MAX_HOSE_LENGTH)
             
-                if #SpawnedPipes == 0 then
-                    if loadModel() then
-                        for i = 1, MAX_SEGMENTS do
-                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
-                            SetEntityCollision(obj, false, false)
-                            SetEntityVisible(obj, false, false)
-                            table.insert(SpawnedPipes, obj)
-                        end
-                    else
-                        print("^1[ERREUR] prop_pipe_firefighter impossible à charger^7")
+                if SpawnedPipes[plate] == nil then
+                    SpawnedPipes[plate] = {}
+                end
+                
+                if #SpawnedPipes[plate] == 0 then
+                    for _ = 1, MAX_SEGMENTS do
+                        local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
+                        SetEntityCollision(obj, false, false)
+                        SetEntityVisible(obj, false, false)
+                        table.insert(SpawnedPipes[plate], obj)
                     end
                 end
 
@@ -175,16 +177,16 @@ Citizen.CreateThread(function()
                 local lastCirclePos  = coilPos(coilCenter, math.max(1, rolledCount), SEGS_PER_TURN, SEGMENT_LENGTH)
 
                 local tangentOut = coilTangent(coilCenter, math.max(1, rolledCount), SEGS_PER_TURN, SEGMENT_LENGTH, 0.5)
-
                 local tanIn = coilTangent(coilCenter, 1, SEGS_PER_TURN, SEGMENT_LENGTH, 1.5)
 
                 local ptC_in = vector3(
-                        firstCirclePos.x - (tanIn.x - firstCirclePos.x),
-                        firstCirclePos.y - (tanIn.y - firstCirclePos.y),
-                        ptA.z
-                    )
+                    firstCirclePos.x - (tanIn.x - firstCirclePos.x),
+                    firstCirclePos.y - (tanIn.y - firstCirclePos.y),
+                    ptA.z
+                )
+
                 for i = 1, JUNCTION_IN_SEGS do
-                    local obj = SpawnedPipes[i]
+                    local obj = SpawnedPipes[plate][i]
                     if obj and DoesEntityExist(obj) then
                         SetEntityVisible(obj, true, false)
                         local t1  = (i - 1) / JUNCTION_IN_SEGS
@@ -196,7 +198,7 @@ Citizen.CreateThread(function()
                 end
 
                 for i = 1, rolledCount do
-                    local obj = SpawnedPipes[JUNCTION_IN_SEGS + i]
+                    local obj = SpawnedPipes[plate][JUNCTION_IN_SEGS + i]
                     if obj and DoesEntityExist(obj) then
                         SetEntityVisible(obj, true, false)
                         local pos     = coilPos(coilCenter, i,     SEGS_PER_TURN, SEGMENT_LENGTH)
@@ -211,7 +213,7 @@ Citizen.CreateThread(function()
                 local junctionOutStart = lastCirclePos
 
                 for i = 1, JUNCTION_OUT_SEGS do
-                    local obj = SpawnedPipes[JUNCTION_IN_SEGS + rolledCount + i]
+                    local obj = SpawnedPipes[plate][JUNCTION_IN_SEGS + rolledCount + i]
                     if obj and DoesEntityExist(obj) then
                         SetEntityVisible(obj, true, false)
                         local t1  = (i - 1) / JUNCTION_OUT_SEGS
@@ -228,8 +230,6 @@ Citizen.CreateThread(function()
                     end
                 end
 
-                local t_end   = 1.0
-                local u_end   = 1.0 - t_end
                 local midTarget = vector3(
                     lastCirclePos.x + (ptB.x - lastCirclePos.x) * 0.25,
                     lastCirclePos.y + (ptB.y - lastCirclePos.y) * 0.25,
@@ -239,12 +239,8 @@ Citizen.CreateThread(function()
 
                 if unrolledCount > 0 then
                     local down = math.min(0.3, distance * 0.05)
-                    
                     local targetZ = ((ptStart.z + ptB.z) * 0.5) - down
-                    
-                    if targetZ < ptStart.z then
-                        targetZ = ptStart.z
-                    end
+                    if targetZ < ptStart.z then targetZ = ptStart.z end
 
                     local ptC_unrolled = vector3(
                         (ptStart.x + ptB.x) * 0.5,
@@ -254,7 +250,7 @@ Citizen.CreateThread(function()
 
                     local baseIdx = JUNCTION_IN_SEGS + rolledCount + JUNCTION_OUT_SEGS
                     for i = 1, unrolledCount do
-                        local obj = SpawnedPipes[baseIdx + i]
+                        local obj = SpawnedPipes[plate][baseIdx + i]
                         if obj and DoesEntityExist(obj) then
                             SetEntityVisible(obj, true, false)
                             local t1  = (i - 1) / unrolledCount
@@ -265,58 +261,30 @@ Citizen.CreateThread(function()
                         end
                     end
                 end
-            end
 
+            elseif SpawnedPipes[plate] then
+                for i = 1, #SpawnedPipes[plate] do
+                    local obj = SpawnedPipes[plate][i]
+                    if obj and DoesEntityExist(obj) then
+                        SetEntityVisible(obj, false, false)
+                    end
+                end
+            end
+        end
+        
+        for plate, pipeList in pairs(SpawnedPipes) do
+            if not activeTrucks[plate] then
+                for _, obj in ipairs(pipeList) do
+                    if DoesEntityExist(obj) then DeleteEntity(obj) end
+                end
+                SpawnedPipes[plate] = nil
+            end
+        end
+        
+        if hasAnyActive then
             Citizen.Wait(0)
         else
-            for _, obj in ipairs(SpawnedPipes) do
-                if DoesEntityExist(obj) then DeleteEntity(obj) end
-            end
-            SpawnedPipes = {}
-            activeHoseTruckEntity = 0
             Citizen.Wait(1000)
         end
     end
 end)
-
---[[local TEST_TRUCK_OFFSET = vector3(1.0,-0.1,0.0)
-local TEST_HOSE_OFFSET = vector3(0.0,-0.15,0.0)
-
-Citizen.CreateThread(function()
-    while true do
-        
-        if Has_hose then
-            local playerPed = PlayerPedId()
-            local playerCoords = GetEntityCoords(playerPed)
-
-            
-            local firetruck = GetClosestVehicle(
-                playerCoords.x, playerCoords.y, playerCoords.z,
-                MAX_HOSE_LENGTH + 5.0, GetHashKey("firetruk"), 70
-            )
-
-            if firetruck and firetruck ~= 0 then
-                
-                local trappeCoords = GetOffsetFromEntityInWorldCoords(firetruck, TEST_TRUCK_OFFSET.x, TEST_TRUCK_OFFSET.y, TEST_TRUCK_OFFSET.z)
-                
-                
-                if trappeCoords and trappeCoords.x ~= 0.0 then
-                    DrawMarker(28, trappeCoords.x, trappeCoords.y, trappeCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.2, 255, 0, 0, 150, false, false, 2, false, nil, nil, false)
-                end
-            end
-
-            
-            if HoseObject and DoesEntityExist(HoseObject) then
-                local emboutCoords = GetOffsetFromEntityInWorldCoords(HoseObject, TEST_HOSE_OFFSET.x, TEST_HOSE_OFFSET.y, TEST_HOSE_OFFSET.z)
-                
-                if emboutCoords and emboutCoords.x ~= 0.0 then
-                    DrawMarker(28, emboutCoords.x, emboutCoords.y, emboutCoords.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1, 0, 0, 255, 150, false, false, 2, false, nil, nil, false)
-                end
-            end
-
-            Citizen.Wait(0)
-        else
-            Citizen.Wait(1000)
-        end
-    end
-end)]]

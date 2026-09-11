@@ -182,14 +182,27 @@ Citizen.CreateThread(function()
                         HoseObject = 0
                         Has_hose = false
 
+                        if TrucksClient[myPlate] then
+                            TrucksClient[myPlate].isHoseOut = false
+                            TrucksClient[myPlate].hoseHolder = nil
+                        end
+                        
                         TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isHoseOut', false)
+                        TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'hoseHolder', nil)
 
                         SetNotificationTextEntry("STRING")
                         AddTextComponentString("Hose stored back in the truck")
                         DrawNotification(false, false)
                     elseif not isTruckHoseOut then
                         Has_hose = true
+                        
+                        if TrucksClient[myPlate] then
+                            TrucksClient[myPlate].isHoseOut = true
+                            TrucksClient[myPlate].hoseHolder = GetPlayerServerId(PlayerId())
+                        end
+                        
                         TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'isHoseOut', true)
+                        TriggerServerEvent('fx-firefighter:updateTruckState', myPlate, 'hoseHolder', GetPlayerServerId(PlayerId()))
 
                         local hash_hose = GetHashKey("prop_hose_nozzle")
                         RequestModel(hash_hose)

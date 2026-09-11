@@ -7,16 +7,6 @@ local SpawnedRefillPipes = {}
 local SEGMENT_LENGTH = 0.05
 local MAX_SEGMENTS   = 600
 
-local function GetVehicleByPlate(targetPlate)
-    local vehicles = GetGamePool('CVehicle')
-    for _, veh in ipairs(vehicles) do
-        if GetVehicleNumberPlateText(veh) == targetPlate then
-            return veh
-        end
-    end
-    return 0
-end
-
 Citizen.CreateThread(function()
     while true do
         if Has_refillHose then

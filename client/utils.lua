@@ -22,3 +22,13 @@ function PlacePipeSegment(obj, pt1, pt2)
     SetEntityCoords(obj, pt1.x, pt1.y, pt1.z, false, false, false, false)
     SetEntityRotation(obj, pitch, 0.0, yaw - 90.0, 2, true)
 end
+
+function GetVehicleByPlate(targetPlate)
+    local vehicles = GetGamePool('CVehicle')
+    for _, veh in ipairs(vehicles) do
+        if GetVehicleNumberPlateText(veh) == targetPlate then
+            return veh
+        end
+    end
+    return 0
+end
