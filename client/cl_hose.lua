@@ -65,6 +65,7 @@ Citizen.CreateThread(function()
             DisablePlayerFiring(PlayerId(), true)
             DisableControlAction(0, 21, true)
             DisableControlAction(0, 22, true)
+            DisableControlAction(0, 23, true)
             if IsControlPressed(0, 25) then
                 if not isFiring then
                     isFiring = true

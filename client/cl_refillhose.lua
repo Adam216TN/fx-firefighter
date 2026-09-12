@@ -17,6 +17,7 @@ Citizen.CreateThread(function()
             end
             DisableControlAction(0, 21, true)
             DisableControlAction(0, 22, true)
+            DisableControlAction(0, 23, true)
             
             Citizen.Wait(0)
         else
