@@ -303,6 +303,7 @@ Citizen.CreateThread(function()
                     if DoesEntityExist(obj) then DeleteEntity(obj) end
                 end
                 SpawnedPipes[plate] = nil
+                timeOff[plate] = nil
                 
                 local truckState = TrucksClient[plate]
                 if truckState and truckState.hoseNetId then

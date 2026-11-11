@@ -174,6 +174,7 @@ Citizen.CreateThread(function()
                     if DoesEntityExist(obj) then DeleteEntity(obj) end
                 end
                 SpawnedRefillPipes[plate] = nil
+                timeOff[plate] = nil
             end
         end
 
