@@ -110,6 +110,8 @@ Citizen.CreateThread(function()
         return
     end
 
+    local timeOff = {}
+
     while true do
         local activeTrucks = {}
 
@@ -150,6 +152,8 @@ Citizen.CreateThread(function()
             end
 
             if firetruck ~= 0 and ptB ~= nil then
+
+                timeOff[plate] = nil
                 local ptA = GetEntityCoords(firetruck)
                 local realSpawnPt = GetOffsetFromEntityInWorldCoords(firetruck, TRUCK_PANEL_OFFSET.x, TRUCK_PANEL_OFFSET.y, TRUCK_PANEL_OFFSET.z)
                 local distance = math.min(#(ptA - ptB), MAX_HOSE_LENGTH)
@@ -274,6 +278,21 @@ Citizen.CreateThread(function()
                     if obj and DoesEntityExist(obj) then
                         SetEntityVisible(obj, false, false)
                     end
+                end
+
+                if timeOff[plate] == nil then
+                    timeOff[plate] = GetGameTimer()
+                end
+                
+                if GetGameTimer() - timeOff[plate] >= 30000 then
+                    for i = 1, #SpawnedPipes[plate] do
+                        local obj = SpawnedPipes[plate][i]
+                        if obj and DoesEntityExist(obj) then
+                            DeleteEntity(obj)
+                        end
+                    end
+                    SpawnedPipes[plate] = nil
+                    timeOff[plate] = nil
                 end
             end
         end

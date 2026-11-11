@@ -47,6 +47,8 @@ Citizen.CreateThread(function()
         print("^1[ERREUR] prop_pipe_firefighter impossible à charger^7")
         return
     end
+
+    local timeOff = {}
     
     while true do
         local activeTrucks = {}
@@ -66,6 +68,9 @@ Citizen.CreateThread(function()
 
             hasAnyActive = true
 
+            local ptA = nil
+            local ptB = nil
+
             if firetruck ~= 0 and DoesEntityExist(firetruck) then
                 local boneIndexLeft = GetEntityBoneIndexByName(firetruck, "wheel_lr")
                 local panelLeftCoords = GetWorldPositionOfEntityBone(firetruck, boneIndexLeft)
@@ -74,13 +79,13 @@ Citizen.CreateThread(function()
                 local offsetXL = 0.0
                 local offsetYL = 2.0
 
-                local ptA = vector3(
+                ptA = vector3(
                     panelLeftCoords.x + (offsetXL * math.cos(rad) - offsetYL * math.sin(rad)),
                     panelLeftCoords.y + (offsetXL * math.sin(rad) + offsetYL * math.cos(rad)),
                     panelLeftCoords.z
                 )
 
-                local ptB = nil
+                ptB = nil
 
                 if data.isHeld == false then
                     local hydrantEntity = NetToObj(data.hydrantNetId)
@@ -97,45 +102,63 @@ Citizen.CreateThread(function()
                         end
                     end
                 end
+            end
 
-                if ptA and ptB then
-                    if SpawnedRefillPipes[plate] == nil then
-                        SpawnedRefillPipes[plate] = {}
-                    end
-                    
-                    if #SpawnedRefillPipes[plate] == 0 then
-                        for i = 1, MAX_SEGMENTS do
-                            local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
-                            SetEntityCollision(obj, false, false)
-                            SetEntityVisible(obj, false, false)
-                            table.insert(SpawnedRefillPipes[plate], obj)
-                        end
-                    end
-
+            if ptA and ptB then
+                timeOff[plate] = nil
+                
+                if SpawnedRefillPipes[plate] == nil then
+                    SpawnedRefillPipes[plate] = {}
+                end
+                
+                if #SpawnedRefillPipes[plate] == 0 then
                     for i = 1, MAX_SEGMENTS do
-                        local obj = SpawnedRefillPipes[plate][i]
-                        if obj and DoesEntityExist(obj) then
-                            SetEntityVisible(obj, true, false)
-                            
-                            local t1 = (i - 1) / MAX_SEGMENTS
-                            local t2 = i / MAX_SEGMENTS
-
-                            local pt1 = Bezier(ptA, (ptA + ptB) / 2.0, ptB, t1)
-                            local pt2 = Bezier(ptA, (ptA + ptB) / 2.0, ptB, t2)
-
-                            PlacePipeSegment(obj, pt1, pt2)
-                        end
+                        local obj = CreateObject(hash_pipe, ptA.x, ptA.y, ptA.z, false, false, false)
+                        SetEntityCollision(obj, false, false)
+                        SetEntityVisible(obj, false, false)
+                        table.insert(SpawnedRefillPipes[plate], obj)
                     end
-                elseif SpawnedRefillPipes[plate] then
-                    
+                end
+
+                for i = 1, MAX_SEGMENTS do
+                    local obj = SpawnedRefillPipes[plate][i]
+                    if obj and DoesEntityExist(obj) then
+                        SetEntityVisible(obj, true, false)
+                        
+                        local t1 = (i - 1) / MAX_SEGMENTS
+                        local t2 = i / MAX_SEGMENTS
+
+                        local pt1 = Bezier(ptA, (ptA + ptB) / 2.0, ptB, t1)
+                        local pt2 = Bezier(ptA, (ptA + ptB) / 2.0, ptB, t2)
+
+                        PlacePipeSegment(obj, pt1, pt2)
+                    end
+                end
+            elseif SpawnedRefillPipes[plate] then
+                
+                for i = 1, #SpawnedRefillPipes[plate] do
+                    local obj = SpawnedRefillPipes[plate][i]
+                    if obj and DoesEntityExist(obj) then
+                        SetEntityVisible(obj, false, false)
+                    end
+                end
+
+                if timeOff[plate] == nil then
+                    timeOff[plate] = GetGameTimer()
+                end
+            
+                if GetGameTimer() - timeOff[plate] >= 30000 then
                     for i = 1, #SpawnedRefillPipes[plate] do
                         local obj = SpawnedRefillPipes[plate][i]
                         if obj and DoesEntityExist(obj) then
-                            SetEntityVisible(obj, false, false)
+                            DeleteEntity(obj)
                         end
                     end
+                    SpawnedRefillPipes[plate] = nil
+                    timeOff[plate] = nil
                 end
             end
+            
         end
             
         for plate, pipeList in pairs(SpawnedRefillPipes) do
