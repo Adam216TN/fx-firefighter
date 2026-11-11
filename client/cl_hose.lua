@@ -151,7 +151,7 @@ Citizen.CreateThread(function()
                 end
             end
 
-            if firetruck ~= 0 and ptB ~= nil then
+            if firetruck ~= 0 and DoesEntityExist(firetruck) and ptB ~= nil then
 
                 timeOff[plate] = nil
                 local ptA = GetEntityCoords(firetruck)
