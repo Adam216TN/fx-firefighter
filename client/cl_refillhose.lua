@@ -93,12 +93,19 @@ Citizen.CreateThread(function()
                         ptB = GetEntityCoords(hydrantEntity)
                     end
                 else
-                    local playerIndex = GetPlayerFromServerId(data.refillHolderID)
-                    if playerIndex ~= -1 then
-                        local holderPed = GetPlayerPed(playerIndex)
-                        if DoesEntityExist(holderPed) then
-                            local bone = GetPedBoneIndex(holderPed, 57005)
-                            ptB = GetPedBoneCoords(holderPed, bone, 0.0, 0.0, 0.0)
+                    
+                    if Has_refillHose and HoldingRefillPlate == plate then
+                        local playerPed = PlayerPedId()
+                        local bone = GetPedBoneIndex(playerPed,57005)
+                        ptB = GetPedBoneCoords(playerPed, bone, 0.0, 0.0, 0.0)
+                    else
+                        local playerIndex = GetPlayerFromServerId(data.refillHolderID)
+                        if playerIndex ~= -1 then
+                            local holderPed = GetPlayerPed(playerIndex)
+                            if DoesEntityExist(holderPed) then
+                                local bone = GetPedBoneIndex(holderPed, 57005)
+                                ptB = GetPedBoneCoords(holderPed, bone, 0.0, 0.0, 0.0)
+                            end
                         end
                     end
                 end
