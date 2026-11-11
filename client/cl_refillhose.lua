@@ -7,6 +7,17 @@ local SpawnedRefillPipes = {}
 local SEGMENT_LENGTH = 0.05
 local MAX_SEGMENTS   = 600
 
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() then
+        for _, pipeList in pairs(SpawnedRefillPipes) do
+            for _, obj in ipairs(pipeList) do
+                if DoesEntityExist(obj) then DeleteEntity(obj) end
+            end
+        end
+        SpawnedRefillPipes = {}
+    end
+end)
+
 Citizen.CreateThread(function()
     while true do
         if Has_refillHose then
